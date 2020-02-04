@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Salad - RC3 CTF 2016 | Ashutosh</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="https://ashutosh1206.github.io/css/theme-override.css">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.css" integrity="sha384-D+9gmBxUQogRLqvARvNLmA9hS2x//eK1FhVb9PiU86gmcrBrJAQT8okdJ4LMp2uv" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.js" integrity="sha384-483A6DwYfKeDa0Q52fJmxFXkcPCFfnXMoXblOkJ4JcA8zATN6Tm78UNL72AKk+0O" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/contrib/auto-render.min.js" integrity="sha384-yACMu8JWxKzSp/C1YV86pzGiQ/l1YUfE8oPuahJQxzehAjEt2GiQuy/BIvl9KyeF" crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body);
+        });
+    </script>
+
+<header>
+
+  
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <nav>
+    <ul>
+      
+      
+      <li class="pull-left ">
+        <a href="https://ashutosh1206.github.io">/home/ashutosh</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/post/">Blog</a>
+      </li>
+      
+      
+      <li class="pull-left current">
+        <a href="/writeups/">Writeups</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/talks/">Talks</a>
+      </li>
+      
+
+      
+      
+      <li class="pull-right">
+        <a href="/categories/">~/categories</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/tags/">~/tags</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/index.xml">~/subscribe</a>
+      </li>
+      
+
+    </ul>
+  </nav>
+</header>
+
+    
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-157739046-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+  </head>
+
+  <body>
+    <br/>
+
+<div class="article-meta">
+<h1><span class="title">Salad - RC3 CTF 2016</span></h1>
+<h2 class="author">Ashutosh Ahelleya</h2>
+<h2 class="date">2016/11/22</h2>
+<p class="terms">
+  
+  
+  Categories: <a href="/categories/crypto">Crypto</a> 
+  
+  
+  
+  Tags: <a href="/tags/stream-cipher">stream-cipher</a> 
+  
+  
+</p>
+</div>
+
+
+
+<main>
+<p><strong>Challenge Points</strong>: 100<br />
+<strong>Challenge Description</strong>:</p>
+
+<blockquote>
+<p>“The fault, dear Brutus, is not in our stars, but in ourselves.”<br />
+(I.ii.141) Julius Caesar in William Shakespeare’s Julius Caesar</p>
+
+<p><strong>Ciphertext</strong>: 7sj-ighm-742q3w4t</p>
+</blockquote>
+
+<p>Since every flag in the CTF had to start with &ldquo;RC3-2016&rdquo;, we know partial plaintext value.</p>
+
+<p>This led me to find a relation between the letters and the digits using the first 7 characters of the ciphertext and &ldquo;RC3-2016&rdquo;. The pattern that I could figure out was this:</p>
+
+<table align="left">
+    <tr>
+      <th> plaintext </th>
+      <th> ciphertext </th>
+    </tr>
+    <tr>
+      <td> K </td>
+      <td> 0 </td>
+    </tr>
+    <tr>
+      <td> L </td>
+      <td> 1 </td>
+    </tr>
+    <tr>
+      <td> M </td>
+      <td> 2 </td>
+    </tr>
+    <tr>
+      <td> N </td>
+      <td> 3 </td>
+    </tr>
+    <tr>
+      <td> O </td>
+      <td> 4 </td>
+    </tr>
+    <tr>
+      <td> P </td>
+      <td> 5 </td>
+    </tr>
+    <tr>
+      <td> Q </td>
+      <td> 6 </td>
+    </tr>
+    <tr>
+      <td> R </td>
+      <td> 7 </td>
+    </tr>
+    <tr>
+      <td> S </td>
+      <td> 8 </td>
+    </tr>
+    <tr>
+      <td> T </td>
+      <td> 9 </td>
+    </tr>
+    <tr>
+      <td> U </td>
+      <td> A </td>
+    </tr>
+    <tr>
+      <td> V </td>
+      <td> B </td>
+    </tr>
+</table>
+
+<table align="right">
+    <tr>
+      <th> plaintext </th>
+      <th> ciphertext </th>
+    </tr>
+    <tr>
+      <td> 8 </td>
+      <td> O </td>
+    </tr>
+    <tr>
+      <td> 9 </td>
+      <td> P </td>
+    </tr>
+    <tr>
+      <td> A </td>
+      <td> Q </td>
+    </tr>
+    <tr>
+      <td> B </td>
+      <td> R </td>
+    </tr>
+    <tr>
+      <td> C </td>
+      <td> S </td>
+    </tr>
+    <tr>
+      <td> D </td>
+      <td> T </td>
+    </tr>
+    <tr>
+      <td> E </td>
+      <td> U </td>
+    </tr>
+    <tr>
+      <td> F </td>
+      <td> V </td>
+    </tr>
+    <tr>
+      <td> G </td>
+      <td> W </td>
+    </tr>
+    <tr>
+      <td> H </td>
+      <td> X </td>
+    </tr>
+    <tr>
+      <td> I </td>
+      <td> Y </td>
+    </tr>
+    <tr>
+      <td> J </td>
+      <td> Z </td>
+    </tr>
+</table>
+
+<table>
+<thead>
+<tr>
+<th>plaintext</th>
+<th>ciphertext</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>W</td>
+<td>C</td>
+</tr>
+
+<tr>
+<td>X</td>
+<td>D</td>
+</tr>
+
+<tr>
+<td>Y</td>
+<td>E</td>
+</tr>
+
+<tr>
+<td>Z</td>
+<td>F</td>
+</tr>
+
+<tr>
+<td>0</td>
+<td>G</td>
+</tr>
+
+<tr>
+<td>1</td>
+<td>H</td>
+</tr>
+
+<tr>
+<td>2</td>
+<td>I</td>
+</tr>
+
+<tr>
+<td>3</td>
+<td>J</td>
+</tr>
+
+<tr>
+<td>4</td>
+<td>K</td>
+</tr>
+
+<tr>
+<td>5</td>
+<td>L</td>
+</tr>
+
+<tr>
+<td>6</td>
+<td>M</td>
+</tr>
+
+<tr>
+<td>7</td>
+<td>N</td>
+</tr>
+</tbody>
+</table>
+
+<p><strong>Ciphertext</strong>: 7sj-ighm-742q3w4t</p>
+
+<p>Using lookup table to substitute ciphertext character with its corresponding plaintext character, we get:<br />
+<strong>Flag</strong>: RC3-2016-ROMANGOD</p>
+
+<p>Pretty basic :)<br />
+Looking forward to exploring and solving more questions in Cryptography!</p>
+
+</main>
+
+    <footer>
+      
+<script>
+(function() {
+  function center_el(tagName) {
+    var tags = document.getElementsByTagName(tagName), i, tag;
+    for (i = 0; i < tags.length; i++) {
+      tag = tags[i];
+      var parent = tag.parentElement;
+      
+      if (parent.childNodes.length === 1) {
+        
+        if (parent.nodeName === 'A') {
+          parent = parent.parentElement;
+          if (parent.childNodes.length != 1) continue;
+        }
+        if (parent.nodeName === 'P') parent.style.textAlign = 'center';
+      }
+    }
+  }
+  var tagNames = ['img', 'embed', 'object'];
+  for (var i = 0; i < tagNames.length; i++) {
+    center_el(tagNames[i]);
+  }
+})();
+</script>
+
+      
+      <hr/>
+      <a href="https://www.linkedin.com/in/ashutosh1206/"><img src='/linkedin.svg' style='max-width:3%' alt='LinkedIn account' /></a> <a href="https://twitter.com/ashutosha_"><img src='/twitter.svg' style='max-width:3%' alt='Twitter handle' /></a> <a href="https://github.com/ashutosh1206"><img src='/github.svg' style='max-width:3%' alt='GitHub account' /></a>
+      
+    </footer>
+  </body>
+</html>
+

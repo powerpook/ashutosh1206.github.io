@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Crypto writeups [Part-2] - InCTFi 2018 | Ashutosh</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="https://ashutosh1206.github.io/css/theme-override.css">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.css" integrity="sha384-D+9gmBxUQogRLqvARvNLmA9hS2x//eK1FhVb9PiU86gmcrBrJAQT8okdJ4LMp2uv" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.js" integrity="sha384-483A6DwYfKeDa0Q52fJmxFXkcPCFfnXMoXblOkJ4JcA8zATN6Tm78UNL72AKk+0O" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/contrib/auto-render.min.js" integrity="sha384-yACMu8JWxKzSp/C1YV86pzGiQ/l1YUfE8oPuahJQxzehAjEt2GiQuy/BIvl9KyeF" crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body);
+        });
+    </script>
+
+<header>
+
+  
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <nav>
+    <ul>
+      
+      
+      <li class="pull-left ">
+        <a href="https://ashutosh1206.github.io">/home/ashutosh</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/post/">Blog</a>
+      </li>
+      
+      
+      <li class="pull-left current">
+        <a href="/writeups/">Writeups</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/talks/">Talks</a>
+      </li>
+      
+
+      
+      
+      <li class="pull-right">
+        <a href="/categories/">~/categories</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/tags/">~/tags</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/index.xml">~/subscribe</a>
+      </li>
+      
+
+    </ul>
+  </nav>
+</header>
+
+    
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-157739046-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+  </head>
+
+  <body>
+    <br/>
+
+<div class="article-meta">
+<h1><span class="title">Crypto writeups [Part-2] - InCTFi 2018</span></h1>
+<h2 class="author">Ashutosh Ahelleya</h2>
+<h2 class="date">2018/10/14</h2>
+<p class="terms">
+  
+  
+  Categories: <a href="/categories/crypto">Crypto</a> 
+  
+  
+  
+  Tags: <a href="/tags/elliptic-curves">Elliptic-Curves</a> <a href="/tags/rsa">RSA</a> 
+  
+  
+</p>
+</div>
+
+
+
+<main>
+
+
+<p>This blog post covers intended solutions of two crypto challenges from InCTF-2018: <strong>Request-Auth</strong> and <strong>EC-Auth</strong>.</p>
+
+<h1 id="request-auth">Request-Auth</h1>
+
+<p><img src="/inctfi18-crypto-part2-1.png" alt="picture" /><br />
+<em>Challenge Description</em></p>
+
+<p>This was a medium level crypto challenge that I created for InCTF International-2018. In the challenge you are given multiple files: <code>iv.txt</code>, <code>key.enc</code>, <code>publickey.pem</code>, <code>ServerSide.py</code>, <code>session.enc</code> and also have a service running these files.</p>
+
+<p>Contents of <code>ServerSide.py</code>:</p>
+
+<pre><code class="language-python">#!/usr/bin/env python2.7
+
+from Crypto.Cipher import AES
+from Crypto.PublicKey import RSA
+from Crypto.Util.number import *
+from os import urandom
+import sys
+
+BLOCKSIZE = 16
+
+class Unbuffered(object):
+   def __init__(self, stream):
+       self.stream = stream
+   def write(self, data):
+       self.stream.write(data)
+       self.stream.flush()
+   def writelines(self, datas):
+       self.stream.writelines(datas)
+       self.stream.flush()
+   def __getattr__(self, attr):
+       return getattr(self.stream, attr)
+
+sys.stdout = Unbuffered(sys.stdout)
+
+class colors:
+    reset='\033[0m'
+    red='\033[31m'
+    green='\033[32m'
+    orange='\033[33m'
+    blue='\033[34m'
+
+def unpad(s):
+    s = s[:-ord(s[len(s) - 1])]
+    return s
+
+def check_valid_request(s):
+    try:
+        s = s.split(&quot;:&quot;)
+    except:
+        return False
+    if len(s) != 3:
+        return False
+    if s[0] != &quot;bi0s&quot;:
+        return False
+    if s[1][:7] != &quot;userid=&quot;:
+        return False
+    if s[2][:5] != &quot;user=&quot;:
+        return False
+    return True
+
+class ServerSide:
+    def __init__(self, key, iv):
+        self.key = key[-16:]
+        self.iv = iv[-16:]
+
+    def process_request(self, req_enc):
+        try:
+            obj2 = AES.new(self.key, AES.MODE_CBC, self.iv)
+            request = obj2.decrypt(req_enc)
+            return check_valid_request(request)
+        except:
+            return False
+
+def get_AES_key():
+    try:
+        key_enc = raw_input(&quot;Enter encrypted key value in hex: &quot;)
+        key_enc = int(key_enc, 16)
+    except:
+        print colors.red + &quot;Enter valid input!&quot; + colors.reset
+        sys.exit()
+    priv_key = RSA.importKey(open(&quot;privatekey.pem&quot;).read())
+    n, d = priv_key.n, priv_key.d
+    key_AES = pow(key_enc, d, n)
+    key_AES = long_to_bytes(key_AES)
+    return key_AES
+
+string1 = colors.blue + &quot;&quot;&quot;
+$$\       $$\  $$$$$$\\
+$$ |      \__|$$$ __$$\\
+$$$$$$$\  $$\ $$$$\ $$ | $$$$$$$\\
+$$  __$$\ $$ |$$\$$\$$ |$$  _____|
+$$ |  $$ |$$ |$$ \$$$$ |\$$$$$$\\
+$$ |  $$ |$$ |$$ |\$$$ | \____$$\\
+$$$$$$$  |$$ |\$$$$$$  /$$$$$$$  |
+\_______/ \__| \______/ \_______/
+&quot;&quot;&quot; + colors.reset
+if __name__ == '__main__':
+    print colors.orange + &quot;Welcome to bi0s Request Validation Service&quot; + colors.reset
+    print string1
+    key = get_AES_key()
+    iv = open(&quot;iv.txt&quot;).read()
+    obj1 = ServerSide(key, iv)
+
+    try:
+        ct = raw_input(&quot;\nEnter value of encrypted session request in hex: &quot;)
+        ct = ct.decode(&quot;hex&quot;)
+    except TypeError:
+        print colors.red + &quot;Enter a valid hex string!&quot; + colors.reset
+        sys.exit()
+
+    if obj1.process_request(ct) == True:
+        print colors.green + &quot;\nValid request!&quot; + colors.reset
+    else:
+        print colors.red + &quot;\nInvalid request!&quot; + colors.reset
+</code></pre>
+
+<p>Okay, so the service is basically implementing a hybrid cipher- a combination of RSA and AES to authenticate session requests coming from a user and is internally using a public and a private key in this process.</p>
+
+<p><strong>ClientSide</strong>:</p>
+
+<ol>
+<li>For every new session, client generates a new valid request</li>
+<li>The client encrypts the request <code>req</code> in AES-CBC mode using a 16-byte key <code>k</code> and 16-byte  Initialisation Vector IV: \(session\_enc=E_{AES_{k, IV}}(req)\)</li>
+<li>Client then encrypts the 16-byte AES key <code>k</code> using public-key of the server: \(key\_enc = k^e\mod n\)</li>
+<li>In the final step, user gives the encrypted session <code>session_enc</code> and encrypted session-key <code>key_enc</code> as an input to the server</li>
+</ol>
+
+<p><strong>ServerSide</strong>:</p>
+
+<ol>
+<li>Server receives <code>session_enc</code> and <code>key_enc</code> from the Client.</li>
+<li>Decrypts key_enc using it’s private key: \(k=key\_enc^d\mod n\)</li>
+<li>Takes 16 least significant bytes of the resultant value of <code>k</code> as the key</li>
+<li>Decrypts <code>session_enc</code> using value of key obtained from step-3: \(req=D_{AES_{k, IV}}(session\_enc)\)</li>
+<li>Checks the validity of resultant request using check_valid_request() function.</li>
+<li>Returns  True if the request is valid, False if it isn’t.</li>
+</ol>
+
+<p>Had I been a participant trying to solve this challenge, I would have looked at check_valid_request(). Why? Because mostly in such functions, either there is an intentional vulnerability or you can find some unintended weakness that you can exploit. Let’s move to that part:</p>
+
+<pre><code class="language-python">def check_valid_request(s):
+    try:
+        s = s.split(&quot;:&quot;)
+    except:
+        return False
+    if len(s) != 3:
+        return False
+    if s[0] != &quot;bi0s&quot;:
+        return False
+    if s[1][:7] != &quot;userid=&quot;:
+        return False
+    if s[2][:5] != &quot;user=&quot;:
+        return False
+    return True
+</code></pre>
+
+<p>Doesn’t look like ^^ can be exploited. Dead end.</p>
+
+<p>We know that the server only tells us if the request is valid or not, we won’t get a flag from the server directly in any case.</p>
+
+<p>Either we find the server’s private key or we find the AES key using which ​session.enc is encrypted. We are not able to factorise N, nor are we able to find any weakness in the public key, hence the only remaining option is to find the AES key.</p>
+
+<p>How do we find it?</p>
+
+<h2 id="the-vulnerability">The Vulnerability</h2>
+
+<p>Remember how the server inputs encrypted key and evaluates the key to be used for encryption?  Check out the first three steps happening on ServerSide:</p>
+
+<ol>
+<li>Receives <code>session_enc</code> and <code>key_enc</code> from the client.</li>
+<li>Decrypts <code>key_enc</code> using it’s private key: \(k=key\_enc^d\mod n\)</li>
+<li>Takes 16 least significant bytes of the resultant value of k as the key</li>
+</ol>
+
+<p>Do you see the weakness there? Step-3! <em>“Takes 16 least significant bytes from resultant value of k obtained after decryption“</em>. Notice that we are in control of the encrypted AES key and hence we can do a chosen ciphertext attack. We have found the vulnerability, next question- how do we exploit it?</p>
+
+<h2 id="the-exploit">The Exploit</h2>
+
+<p>We know that: \(key\_enc = k^e\mod n\)</p>
+
+<p>If we multiply <code>key_enc</code> by \(2^{me}\mod n\), we will have:
+$$key\_enc * 2^{me} \mod n = k^e2^{me}\mod n$$
+$$k^e2^{me}\mod n = (2^mk)^e\mod n$$</p>
+
+<p>So, just by knowing the ciphertext of <code>k</code>, we can generate values of ciphertext of <code>2k</code>, <code>4k</code>, <code>8k</code>, &hellip; and so on. We also know that no matter how big the ciphertext is, the server will just take 16 least significant bytes of <code>k</code> after decryption.</p>
+
+<p>We will denote \(key\_enc_m\equiv key\_enc*(2^m\mod n)\mod n\) and \(k_m\equiv k*2^m\mod n\)</p>
+
+<p>Consider key_enc<sub>127</sub> which is encryption of k<sub>127</sub> where every bit but the most significant bit is zero. After sending key_enc<sub>127</sub> to the server, upon decryption, only 16 least significant bytes are selected as the key for decrypting the session. This implies that k<sub>127</sub>‘s most significant bit is k’s least significant bit. We assume that k<sub>127</sub>‘s most significant bit is zero, encrypt the session with key that has least significant bit as 0 (Remaining all the bits are anyway zero) and send it to the server.</p>
+
+<p>If the server responds with a “Valid Response” message, then the least significant bit of the AES key is 0, otherwise it is 1. Next, we send key_enc<sub>126</sub> which is the encryption of k<sub>126</sub>, encrypt a valid session with key where 0-125th bits from left are zero, 126th bit is zero and 127th bit is the least significant bit of ​k we got from previous iteration. Again, if the server responds with a “Valid Response” message, then the second least significant bit of AES key is 0, otherwise it is 1.</p>
+
+<p>We iterate this for key_enc<sub>125</sub>, key_enc<sub>124</sub>, &hellip;, key_enc<sub>0</sub>, until all the bits of k are obtained. I have implemented this step as a small python snippet:</p>
+
+<pre><code class="language-python">for i in range(127, -1, -1):
+    r = process(&quot;./run.sh&quot;)
+    key_payload = (key_enc*pow(2, i*publickey.e, publickey.n)) % publickey.n
+    key_dec = hex(int(&quot;0&quot; + global_dec_key[::-1] + &quot;0&quot;*i, 2))[2:].replace(&quot;L&quot;,&quot;&quot;).zfill(32).decode(&quot;hex&quot;)
+    enc_session_payload = encrypt_request(&quot;bi0s:userid=test:user=test2&quot;, key_dec, iv)
+ 
+    # Sending the payload to the service
+    send_enc_key(key_payload)
+    send_enc_session(enc_session_payload)
+ 
+    # Checking if the request is valid
+    if check_enc_req_validity() == 1:
+         global_dec_key += &quot;0&quot;
+    else:
+         global_dec_key += &quot;1&quot;
+    r.close()
+ 
+AES_session_key = hex(int(global_dec_key[::-1], 2)[2:].replace(&quot;L&quot;,&quot;&quot;).zfill(32).decode(&quot;hex&quot;)
+</code></pre>
+
+<p>You can check out the entire exploit script here:</p>
+
+<pre><code class="language-python">from pwn import *
+from Crypto.Cipher import AES
+from Crypto.PublicKey import RSA
+from Crypto.Util.number import *
+ 
+def check_valid_request(s):
+    try:
+        s = s.split(&quot;:&quot;)
+    except:
+        return False
+    if len(s) != 3:
+        return False
+    if s[0] != &quot;bi0s&quot;:
+        return False
+    if s[1][:7] != &quot;userid=&quot;:
+        return False
+    if s[2][:5] != &quot;user=&quot;:
+        return False
+    return True
+ 
+def pad(s):
+    s += chr(16 - len(s)%16)*(16 - len(s)%16)
+    return s
+ 
+def send_enc_key(key):
+    r.recvuntil(&quot;Enter encrypted key value in hex: &quot;)
+    send_key = hex(key)[2:].replace(&quot;L&quot;,&quot;&quot;)
+    r.sendline(send_key)
+ 
+def send_enc_session(enc_session):
+    r.recvuntil(&quot;Enter value of encrypted session request in hex: &quot;)
+    send_session = enc_session.encode(&quot;hex&quot;)
+    r.sendline(send_session)
+ 
+def check_enc_req_validity():
+    validity = r.recvuntil(&quot;!&quot;).split(&quot;\n&quot;)[1]
+    if validity == &quot;Valid request!&quot;:
+        return 1
+    elif validity == &quot;Invalid request!&quot;:
+        return 0
+    else:
+        return -1
+ 
+def encrypt_request(request, key, iv):
+    if check_valid_request(request) == False:
+        print &quot;Cannot encrypt invalid request&quot;
+        return -1
+    obj1 = AES.new(key, AES.MODE_CBC, iv)
+    ct = obj1.encrypt(pad(request))
+    return ct
+ 
+# Reading values from files
+key_enc = bytes_to_long(open(&quot;../Handout/key.enc&quot;).read())
+iv = open(&quot;iv.txt&quot;).read()
+session_enc = open(&quot;../Handout/session.enc&quot;).read()
+publickey = RSA.importKey(open(&quot;../Handout/publickey.pem&quot;).read())
+ 
+# Final decrypted key
+global_dec_key = &quot;&quot;
+ 
+# Pre-test: should return true
+r = remote(&quot;18.224.31.42&quot;,&quot;1337&quot;)
+key_payload = key_enc
+send_enc_key(key_payload)
+send_enc_session(session_enc)
+print &quot;[+] Pre-test results: &quot;, check_enc_req_validity()
+r.close()
+ 
+# Exploit
+for i in range(127, -1, -1):
+    r = remote(&quot;18.224.31.42&quot;,&quot;1337&quot;)
+    key_payload = (key_enc*pow(2, i*publickey.e, publickey.n)) % publickey.n
+    key_dec = hex(int(&quot;0&quot; + global_dec_key[::-1] + &quot;0&quot;*i, 2))[2:].replace(&quot;L&quot;,&quot;&quot;).zfill(32).decode(&quot;hex&quot;)
+    enc_session_payload = encrypt_request(&quot;bi0s:userid=test:user=test2&quot;, key_dec, iv)
+ 
+    # Sending the payload to the service
+    send_enc_key(key_payload)
+    send_enc_session(enc_session_payload)
+ 
+    # Checking if the request is valid
+    if check_enc_req_validity() == 1:
+         global_dec_key += &quot;0&quot;
+    else:
+         global_dec_key += &quot;1&quot;
+    r.close()
+ 
+AES_session_key = hex(int(global_dec_key[::-1], 2))[2:].replace(&quot;L&quot;,&quot;&quot;).zfill(32).decode(&quot;hex&quot;)
+obj1 = AES.new(AES_session_key, AES.MODE_CBC, iv)
+print &quot;Here we go: &quot;, obj1.decrypt(session_enc)
+</code></pre>
+
+<p>Running this script will give us the flag as: <strong>inctf{y0u_eff1ng_CCA2_w1nn3r}</strong></p>
+
+<h2 id="real-world-example">Real World Example</h2>
+
+<p>This vulnerability and attack was a part of research[1] done on Tencent’s QQ Browser, a popular mobile browser in China with hundreds of millions of users worldwide, by three professors- Thomas Ristenpart, Jedidah R. Crandall and Jeffrey Knockel. It was quite silly yet critical vulnerability in QQ Browser that they found. A small excerpt from the paper:</p>
+
+<blockquote>
+<p>When users run QQ Browser on Android, it makes a se-
+ries of what QQ Browser interally terms as “WUP re-
+quests” to QQ Browser’s server. These WUP requests
+contain information such as a user’s International Mobile
+Equipment Identifier (IMEI), International Mobile Sub-
+scriber Identification (IMSI), QQ username, WiFi MAC
+address, SSID of connected WiFi access point and of all
+in-range access points, Android ID, URLs of all web-
+pages visited, and other private information.</p>
+</blockquote>
+
+<p>These requests were encrypted using a method similar to that in the challenge “Request-Auth” with the same vulnerability (No padding and selecting only the least 16 bytes as the key) . This was a critical vulnerability as an attacker can decrypt any session and get access to personal, sensitive information stored in the request (IMEI, QQ username, WiFi MAC address, URLs of all web pages visited etc.)</p>
+
+<p>[1] <a href="https://arxiv.org/abs/1802.03367">https://arxiv.org/abs/1802.03367</a></p>
+
+<p><strong>YCombinator news</strong>: <a href="https://news.ycombinator.com/item?id=16362488">https://news.ycombinator.com/item?id=16362488</a></p>
+
+<p>It was after this paper got released, I decided to create a challenge based on it! Hope you enjoyed the challenge and the write-up! In case you have any queries or suggestions regarding the solution/write-up, you can <a href="https://twitter.com/ashutosha_">reach me out on Twitter</a>, or comment in the comments section below!</p>
+
+<p><br></p>
+
+<h1 id="ec-auth">EC-Auth</h1>
+
+<p><img src="/inctfi18-crypto-part2-2.png" alt="picture" /><br />
+<em>Challenge Description</em></p>
+
+<p>This was a crypto challenge based on Elliptic Curves that I created for InCTF-International 2018. In this challenge you are given two files: <code>ecauth.py</code> and <code>ecsession.py</code>, <code>ecauth.py</code> is basically a file implementing all the operations related to the Elliptic Curve (Point Addition, Scalar Multiplication): \(y^2\equivx^3+a*x+b\mod p\)</p>
+
+<p>This challenge requires basic knowledge of Elliptic Curves to understand. In case you are not familiar with Elliptic Curves and want to learn, here are a few resources that can help you:</p>
+
+<ol>
+<li><a href="http://andrea.corbellini.name/2015/05/17/elliptic-curve-cryptography-a-gentle-introduction/">http://andrea.corbellini.name/2015/05/17/elliptic-curve-cryptography-a-gentle-introduction/</a></li>
+<li><a href="https://github.com/ashutosh1206/Crypton/tree/master/Elliptic-Curves">https://github.com/ashutosh1206/Crypton/tree/master/Elliptic-Curves</a></li>
+</ol>
+
+<p>I took ecauth.py from <a href="https://bitcointalk.org/index.php?topic=23241.0">https://bitcointalk.org/index.php?topic=23241.0</a> and modified it for the challenge. The modified part is:</p>
+
+<pre><code class="language-python">class Public_key(object):
+    def __init__(self, generator):
+        self.generator = generator
+        self.curve = generator.curve()
+        n = generator.order()
+        if not n:
+            raise RuntimeError(&quot;Generator must have order&quot;)
+        if not n * generator == INFINITY:
+            raise RuntimeError(&quot;Generator point order is bad&quot;)
+        if generator.x() &lt; 0 or n &lt;= generator.x() or  generator.y() &lt; 0 or n &lt;= generator.y():
+            raise RuntimeError(&quot;Generator point has x or y out of range&quot;)
+ 
+    def check(self, point):
+        k = self.generator.order()
+        if not k:
+            raise RuntimeError(&quot;Generator must have order&quot;)
+        if not k * point == INFINITY:
+            raise RuntimeError(&quot;Generator point order is bad&quot;)
+        if point.x() &lt; 0 or k &lt;= point.x() or  point.y() &lt; 0 or k &lt;= point.y():
+            raise RuntimeError(&quot;Generator point has x or y out of range&quot;)
+ 
+    def _verify(self, handshake):
+        P = self.generator
+        Q = handshake.Q
+        R = handshake.R
+        s = handshake.s
+        try:
+            self.check(Q)
+            self.check(R)
+        except:
+            return False
+        if (s*P).x() == (Q+R).x() and (s*P).y() == (Q+R).y():
+            return True
+        else:
+            return False
+ 
+class Private_key(object):
+    def __init__(self, public_key, x):
+        self.public_key = public_key
+        self.privkey = x
+ 
+    def _sign(self, r):
+        P = self.public_key.generator
+        Q = self.privkey * P
+        R = r * P
+        s = self.privkey + r
+        return Handshake(Q, R, s)
+</code></pre>
+
+<p>Let us analyse <code>ecsession.py</code> to understand things further:</p>
+
+<pre><code class="language-python">#!/usr/bin/env python2.7
+ 
+from Crypto.Util.number import *
+from os import urandom
+import sys
+import ecauth
+from secret import flag, n
+ 
+class Unbuffered(object):
+   def __init__(self, stream):
+       self.stream = stream
+   def write(self, data):
+       self.stream.write(data)
+       self.stream.flush()
+   def writelines(self, datas):
+       self.stream.writelines(datas)
+       self.stream.flush()
+   def __getattr__(self, attr):
+       return getattr(self.stream, attr)
+ 
+sys.stdout = Unbuffered(sys.stdout)
+ 
+class colors:
+    reset='\033[0m'
+    red='\033[31m'
+    green='\033[32m'
+    orange='\033[33m'
+    blue='\033[34m'
+ 
+p = 89953523493328636138979614835438769105803101293517644103178299545319142490503
+a = p-3
+b = 28285296545714903834902884467158189217354728250629470479032309603102942404639
+ec = ecauth.CurveFp(p, a, b)
+ 
+# Point P on the curve
+_Px = 0x337ef2115b4595fbd60e2ffb5ee6409463609e0e5a6611b105443e02cb82edd8L
+_Py = 0x1879b8d7a68a550f58166f0d6b4e86a0873d7b709e28ee318ddadd4ccf505e1aL
+ 
+# n is the order of the subgroup generated by (_Px, _Py)
+assert ec.contains_point(_Px, _Py)
+ 
+# x is the session-secret key
+x = getPrime(254)
+ 
+assert x &lt; n
+ 
+point_P = ecauth.Point(ec, _Px, _Py, n)
+assert point_P * n == ecauth.INFINITY
+ 
+publickey = ecauth.Public_key(point_P)
+privatekey = ecauth.Private_key(publickey, x)
+ 
+&quot;&quot;&quot;
+You can use the _sign method in ecauth to sign for authentication process.
+But remember,
+You must have the same x as generated in this script to successfully authenticate!
+&quot;&quot;&quot;
+ 
+print colors.orange + &quot;-&quot;*26 + &quot;Welcome to EC-Auth mechanism&quot; + &quot;-&quot;*26 + colors.reset
+point_Q = x * point_P
+print &quot;\nHere is my point Q = x * P: &quot;, point_Q
+ 
+try:
+    _Rx = raw_input(&quot;\nGive me x-coordinate of point R = r * P (in hex without 0x): &quot;)
+    _Ry = raw_input(&quot;Give me y-coordinate of point R = r * P (in hex without 0x): &quot;)
+    s = raw_input(&quot;Give me s = r + x (in hex without 0x): &quot;)
+    _Rx = int(_Rx, 16)
+    _Ry = int(_Ry, 16)
+    s = int(s, 16)
+except:
+    print colors.red + &quot;\nEnter proper hex values!&quot; + colors.reset
+    sys.exit()
+ 
+if not ec.contains_point(_Rx, _Ry):
+    print colors.red + &quot;\nPoint R does not lie on the curve!&quot; + colors.reset
+    sys.exit()
+ 
+point_R = ecauth.Point(ec, _Rx, _Ry)
+assert n * point_R == ecauth.INFINITY
+ 
+obj1 = ecauth.Handshake(point_Q, point_R, s)
+if publickey._verify(obj1):
+    print colors.green + &quot;\nHere, take your flag: &quot; + flag + colors.reset
+else:
+    print colors.red + &quot;\nI knew you would fail&quot; + colors.reset
+    sys.exit()
+</code></pre>
+
+<p>The script is trying to implement an authentication service similar to this:
+<img src="/inctfi18-crypto-part2-3.png" alt="picture" /></p>
+
+<p>Since I could not think of ways in which the attacker would intercept such a communication in order to exploit it, I modified the above authetication process (keeping the concept as it is):</p>
+
+<ol>
+<li><p>The curve used for the process is \(y^2\equiv x^3+a*x+b\mod p\), where p = 89953523493328636138979614835438769105803101293517644103178299545319142490503, a = p-3, and b = 28285296545714903834902884467158189217354728250629470479032309603102942404639</p></li>
+
+<li><p>Server takes a point on the curve P=(_Px, _Py), where _Px = 0x337ef2115b4595fbd60e2ffb5ee6409463609e0e5a6611b105443e02cb82edd8L, _Py = 0x1879b8d7a68a550f58166f0d6b4e86a0873d7b709e28ee318ddadd4ccf505e1aL</p></li>
+
+<li><p>Server generates point Q = x * P (consider it similar to a Prover generating Q and x is the secret key generated by the Prover using a pseudo random number generator) and gives the coordinates of Q.</p></li>
+
+<li><p>The next step is intrusion of communication channel, so you being the attacker will have to give coordinates of R = r * P. If you are the prover, then you will have the value of r, but you are an attacker, so generating R such that the authentication passes, is the challenge 😉</p></li>
+
+<li><p>After getting the value of R, server asks the value of s = x + r, which you can give as input. Again, you are not the prover (you won’t have the values of x and r, so the challenge again is, how do you get it?)</p></li>
+
+<li><p>Then the server calculates if s*P = Q + R, and returns the flag in case it evaluates to true, otherwise simply returns false</p>
+
+<ul>
+<li>This will be true in case you are the prover because for true values of x and r, \(s*P=(x+r)*P=(x*P)+(r*P)=Q+R\)
+<br /></li>
+</ul></li>
+</ol>
+
+<p>How can we accomplish this, as an attacker?</p>
+
+<p><img src="/inctfi18-crypto-part2-4.png" alt="picture" /><br />
+<em>Reference: <a href="https://ecc2017.cs.ru.nl/slides/ecc2017school-smith.pdf">https://ecc2017.cs.ru.nl/slides/ecc2017school-smith.pdf</a></em></p>
+
+<pre><code class="language-python">import ecauth
+from Crypto.Util.number import *
+ 
+p = 89953523493328636138979614835438769105803101293517644103178299545319142490503
+a = p-3
+b = 28285296545714903834902884467158189217354728250629470479032309603102942404639
+ec = ecauth.CurveFp(p, a, b)
+ 
+# Point P on the curve
+_Px = 0x337ef2115b4595fbd60e2ffb5ee6409463609e0e5a6611b105443e02cb82edd8L
+_Py = 0x1879b8d7a68a550f58166f0d6b4e86a0873d7b709e28ee318ddadd4ccf505e1aL
+ 
+# Order of the subgroup generated by (_Px, _Py)
+n = 89953523493328636138979614835438769106005948670998555217484157791369906305783
+assert ec.contains_point(_Px, _Py)
+ 
+point_P = ecauth.Point(ec, _Px, _Py, n)
+assert point_P * n == ecauth.INFINITY
+ 
+list_a = raw_input(&quot;Enter coordinates of Q: &quot;).split(&quot;,&quot;)
+print list_a
+_Qx = int(list_a[0])
+_Qy = int(list_a[1])
+ 
+assert ec.contains_point(_Qx, _Qy)
+negative_Q = ecauth.Point(ec, _Qx, -_Qy, n)
+ 
+r_prime = getPrime(254)
+R_prime = r_prime * point_P
+ 
+print hex((R_prime + negative_Q).x())[2:].replace(&quot;L&quot;,&quot;&quot;)
+print hex((R_prime + negative_Q).y())[2:].replace(&quot;L&quot;,&quot;&quot;)
+print hex(r_prime)[2:].replace(&quot;L&quot;,&quot;&quot;)
+</code></pre>
+
+<p>The output of this script, when given to the server as an input, gives us the flag: <strong>inctf{D4nger0us_eph3m3ral_k3ys!}</strong></p>
+
+<p>Last year, around November I got a chance to learn Elliptic Curves at ECC Winter School, Nijmegen. It was after coming from there that I decided to make a challenge based on Ephemeral Keys (The attack was discussed in one of the sessions, taken by Benjamin Smith: <a href="https://ecc2017.cs.ru.nl/school.shtml">https://ecc2017.cs.ru.nl/school.shtml</a>, hence picture references to the slides ;)). I am and will always be grateful to the organising committee for giving me this opportunity and scholarship. Thanks!</p>
+
+<p>Hope you enjoyed the challenge! If you have any queries related to any crypto challenge from InCTF International you can put it in the comments section, or <a href="https://twitter.com/ashutosha_">ping me on Twitter</a>!</p>
+
+</main>
+
+    <footer>
+      
+<script>
+(function() {
+  function center_el(tagName) {
+    var tags = document.getElementsByTagName(tagName), i, tag;
+    for (i = 0; i < tags.length; i++) {
+      tag = tags[i];
+      var parent = tag.parentElement;
+      
+      if (parent.childNodes.length === 1) {
+        
+        if (parent.nodeName === 'A') {
+          parent = parent.parentElement;
+          if (parent.childNodes.length != 1) continue;
+        }
+        if (parent.nodeName === 'P') parent.style.textAlign = 'center';
+      }
+    }
+  }
+  var tagNames = ['img', 'embed', 'object'];
+  for (var i = 0; i < tagNames.length; i++) {
+    center_el(tagNames[i]);
+  }
+})();
+</script>
+
+      
+      <hr/>
+      <a href="https://www.linkedin.com/in/ashutosh1206/"><img src='/linkedin.svg' style='max-width:3%' alt='LinkedIn account' /></a> <a href="https://twitter.com/ashutosha_"><img src='/twitter.svg' style='max-width:3%' alt='Twitter handle' /></a> <a href="https://github.com/ashutosh1206"><img src='/github.svg' style='max-width:3%' alt='GitHub account' /></a>
+      
+    </footer>
+  </body>
+</html>
+

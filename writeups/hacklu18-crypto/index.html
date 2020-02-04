@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Crypto writeups - Hack.lu CTF | Ashutosh</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="https://ashutosh1206.github.io/css/theme-override.css">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.css" integrity="sha384-D+9gmBxUQogRLqvARvNLmA9hS2x//eK1FhVb9PiU86gmcrBrJAQT8okdJ4LMp2uv" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.js" integrity="sha384-483A6DwYfKeDa0Q52fJmxFXkcPCFfnXMoXblOkJ4JcA8zATN6Tm78UNL72AKk+0O" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/contrib/auto-render.min.js" integrity="sha384-yACMu8JWxKzSp/C1YV86pzGiQ/l1YUfE8oPuahJQxzehAjEt2GiQuy/BIvl9KyeF" crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body);
+        });
+    </script>
+
+<header>
+
+  
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <nav>
+    <ul>
+      
+      
+      <li class="pull-left ">
+        <a href="https://ashutosh1206.github.io">/home/ashutosh</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/post/">Blog</a>
+      </li>
+      
+      
+      <li class="pull-left current">
+        <a href="/writeups/">Writeups</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/talks/">Talks</a>
+      </li>
+      
+
+      
+      
+      <li class="pull-right">
+        <a href="/categories/">~/categories</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/tags/">~/tags</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/index.xml">~/subscribe</a>
+      </li>
+      
+
+    </ul>
+  </nav>
+</header>
+
+    
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-157739046-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+  </head>
+
+  <body>
+    <br/>
+
+<div class="article-meta">
+<h1><span class="title">Crypto writeups - Hack.lu CTF</span></h1>
+<h2 class="author">Ashutosh Ahelleya</h2>
+<h2 class="date">2018/10/18</h2>
+<p class="terms">
+  
+  
+  Categories: <a href="/categories/crypto">Crypto</a> 
+  
+  
+  
+  Tags: <a href="/tags/elliptic-curves">Elliptic-Curves</a> 
+  
+  
+</p>
+</div>
+
+
+
+<main>
+
+
+<p>Hack.lu CTF is over and we (<a href="https://twitter.com/teambi0s">@teambi0s</a>) finished 13th globally and since we were registered as a local team (thanks to <a href="https://twitter.com/geethnatk">@GeethnaTk</a>) and stood first among the teams registered locally, hence we are eligible for prizes! Yay!</p>
+
+<p>This blog post covers detailed solutions to two of the crypto challenges from Hack.lu CTF 2018- <strong>Relations</strong> and <strong>Multiplayer Part-1</strong>. While the former was just about guessing (or detecting the pattern, whatever you want to say) of a black box encryption service, the latter was a more interesting challenge involving Elliptic Curves.</p>
+
+<p>To sum up, I enjoyed solving the crypto challenges this year, but I felt kinda sad and frustrated when Multiplayer Part-2 got removed because of some issues, as I spent quite a lot of time trying it. I learnt a lot meanwhile, so I guess it was worth it!</p>
+
+<p>Kudos to the organisers for putting up a beautiful CTF! Let us move onto the solutions now 🙂</p>
+
+<h1 id="relations">Relations</h1>
+
+<p><img src="/hacklu18-crypto-1.png" alt="picture" /></p>
+
+<p>This was a fairly easy challenge although we are not given any encryption script. We are given three operations on the nc service to choose, <code>XOR</code>, <code>ADD</code> and <code>DEC</code> (decrypt). Then, we have to give an input string on which the selected operation is done.</p>
+
+<p>How the operation takes place was unknown at that particular point of time. But we see something strange here:</p>
+
+<p><img src="/hacklu18-crypto-2.png" alt="picture" /></p>
+
+<p>So now we know that DEC operation takes in base64 key which it then uses to AES decrypt some string, which could possibly be our flag.</p>
+
+<p>Then, we started giving random inputs to <code>XOR</code> and <code>ADD</code> operations and my teammates noticed this:</p>
+
+<p><img src="/hacklu18-crypto-3.png" alt="picture" /></p>
+
+<p>For the same input ​00, ADD and XOR operations give the same output! I immediately thought that we can use this to leak out the string to which our input is XORed or ADDed. And that string could possibly be the key used as an input in ​DEC to AES decrypt our flag. How can we exploit this?</p>
+
+<p>Consider A, B of size 1-bit each. If A=1, A xor B and A+B will be equal only when B = 0. That’s it! We can use this property to generalise and get all the bits of the key:</p>
+
+<ol>
+<li>Send \(2^0, 2^1, 2^2,&hellip;, 2^{127}\) as inputs for both XOR and ADD and check if the outputs for XOR and ADD for an input match.<br />
+
+<ul>
+<li>If they match, then add 0 to the binary keystring, otherwise add 1.</li>
+</ul></li>
+</ol>
+
+<p>I wrote the following script to implement this attack:</p>
+
+<pre><code class="language-python">from pwn import *
+import string
+
+def choose_XOR_op(input):
+    for i in input:
+        assert i in string.hexdigits
+    r.recvuntil(&quot;*&quot;)
+    r.sendline(&quot;XOR&quot;)
+    r.recvuntil(&quot;&gt;&gt;&quot;)
+    r.sendline(input)
+    ct = r.recvline()[17:].strip()
+    unknown = r.recvline().strip()
+    return ct, unknown
+
+def choose_ADD_op(input):
+    for i in input:
+        assert i in string.hexdigits
+    r.recvuntil(&quot;*&quot;)
+    r.sendline(&quot;ADD&quot;)
+    r.recvuntil(&quot;&gt;&gt;&quot;)
+    r.sendline(input)
+    ct = r.recvline()[17:].strip()
+    unknown = r.recvline().strip()
+    return ct, unknown
+
+def choose_DEC_op(input):
+    r.recvuntil(&quot;*&quot;)
+    r.sendline(&quot;DEC&quot;)
+    r.recvuntil(&quot;&gt;&gt;&quot;)
+    r.sendline(input)
+    print r.recvline()
+    print r.recvline()
+    r.close()
+
+list1 = [2**i for i in range(128)]
+key = &quot;&quot;
+
+r = remote(&quot;arcade.fluxfingers.net&quot;,&quot;1821&quot;)
+for i in list1:
+    ct, unknown = choose_XOR_op(hex(i)[2:].replace(&quot;L&quot;,&quot;&quot;))
+    ct1, unknown1 = choose_ADD_op(hex(i)[2:].replace(&quot;L&quot;,&quot;&quot;))
+    if ct+unknown == ct1+unknown1:
+        key += &quot;0&quot;
+        print key
+    else:
+        key += &quot;1&quot;
+        print key
+
+key = hex(int(key[::-1], 2))[2:].replace(&quot;L&quot;,&quot;&quot;).decode(&quot;hex&quot;).encode(&quot;base64&quot;).replace(&quot;\n&quot;,&quot;&quot;)
+choose_DEC_op(key)
+
+r.close()
+</code></pre>
+
+<p>And got the flag!</p>
+
+<p><img src="/hacklu18-crypto-4.png" alt="picture" /></p>
+
+<p><br><br></p>
+
+<h1 id="multiplayer-part-1">Multiplayer Part-1</h1>
+
+<p>Note: This challenge requires basic knowledge of Elliptic Curves. In case you don’t know  ECC and want to start, you can use the following resources:</p>
+
+<ol>
+<li><a href="http://andrea.corbellini.name/2015/05/17/elliptic-curve-cryptography-a-gentle-introduction/">http://andrea.corbellini.name/2015/05/17/elliptic-curve-cryptography-a-gentle-introduction/</a></li>
+<li><a href="https://github.com/ashutosh1206/Crypton/tree/master/Elliptic-Curves">https://github.com/ashutosh1206/Crypton/tree/master/Elliptic-Curves</a></li>
+</ol>
+
+<p><img src="/hacklu18-crypto-5.png" alt="picture" /></p>
+
+<p>In this challenge, we are given the following files: <code>server.sage</code>, <code>parameters.sage</code> and <code>points.db</code>. We can host the challenge locally using <code>server.sage</code> to test our exploit. Having a glance at the challenge description quickly reveals that this challenge is based on Elliptic Curves which is quite evident from <code>parameters.sage</code> as well:</p>
+
+<pre><code class="language-python">param = {   &quot;hacklu&quot;:
+            ((889774351128949770355298446172353873, 12345, 67890),
+            # Generator of Subgroup of prime order 73 bits, 79182553273022138539034276599687 to be excact
+            (238266381988261346751878607720968495, 591153005086204165523829267245014771),
+            # challenge Q = xP, x random from [0, 79182553273022138539034276599687)
+            (341454032985370081366658659122300896, 775807209463167910095539163959068826)
+            )
+        }
+
+serverAdress = '0.0.0.0'
+serverPort = 23426
+
+(p, a, b), (px, py), (qx, qy) = param[&quot;hacklu&quot;]
+E = EllipticCurve(GF(p), [a, b])
+P = E((px, py))
+Q = E((qx, qy))
+
+def is_distinguished_point(p):
+    return p[0] &lt; 2^(100)
+</code></pre>
+
+<p>So the curve defined is \(y^2\equiv x^3 + a*x + b\mod p\), where</p>
+
+<pre><code class="language-python">p = 889774351128949770355298446172353873
+a = 12345
+b = 67890
+</code></pre>
+
+<p>Also, \(P\) and \(Q\) are two points on this curve where \(Q = x*P\) (Note that * symbol here signifies <a href="https://github.com/ashutosh1206/Crypton/tree/master/Elliptic-Curves#scalar-multiplication">Scalar Multiplication</a> and x is the secret key whose value is unknown),</p>
+
+<pre><code class="language-python">P = (238266381988261346751878607720968495, 591153005086204165523829267245014771)
+Q = (341454032985370081366658659122300896, 775807209463167910095539163959068826)
+</code></pre>
+
+<p>We are also given order of the subgroup generated by \(P\):<br />
+79182553273022138539034276599687</p>
+
+<p>According to the property of Elliptic Curves: \(n*P = 0\), where \(n\) is the order of the subgroup generated by a point \(P\) on an Elliptic Curve.</p>
+
+<p>The service communicates with the user using JSON request and JSON responses only. Let us analyse some code snippets below that are taken from <code>server.sage.py</code>.</p>
+
+<p>DLogHandler class:</p>
+
+<pre><code class="language-python">class DLogHandler(asyncore.dispatcher_with_send):
+
+    def handle_read(self):
+        try:
+            json_data = self.recv(_sage_const_8192 )
+            if not json_data:
+                return
+
+            data = json.loads(json_data)
+            # check if the format is correct
+            if not (&quot;x&quot; in data and &quot;y&quot; in data and &quot;c&quot; in data and &quot;d&quot; in data and &quot;groupID&quot; in data):
+                response = json_response(_sage_const_3 )
+            else:
+                c = Integer(data[&quot;c&quot;])
+                d = Integer(data[&quot;d&quot;])
+                x = Integer(data[&quot;x&quot;])
+                y = Integer(data[&quot;y&quot;])
+                X = E((x, y))
+                if X == c*P + d*Q:
+                    response = get_response(data[&quot;x&quot;], data[&quot;y&quot;], data[&quot;c&quot;], data[&quot;d&quot;], data[&quot;groupID&quot;])
+                else:
+                    print(&quot;expected %s = %d*%s + %d*%s, but got %s&quot; % (c*P + d*Q, c, P, d, Q, X))
+                    response = json_response(_sage_const_4 )
+
+            self.send(response)
+
+        except Exception as e:
+            response = json_response(_sage_const_5 , ', &quot;Error Message&quot;: &quot;%s&quot;' % e)
+</code></pre>
+
+<p>So, the service takes JSON request containing <code>x</code>, <code>y</code>, <code>c</code>, <code>d</code> and groupID and checks if:
+$$X = (x, y) = c*P + d*Q$$
+If the above condition is not satisfied, then JSON response simply contains an error message saying &ldquo;Value mismatch! X != c*P + d*Q&rdquo;. If the condition is satisfied then it calls get_response() function, which we will cover next.</p>
+
+<p>Since we know that server communicates with the user only through JSON requests and JSON responses, we can write a function that takes in <code>x</code>, <code>y</code>, <code>c</code>, <code>d</code>, <code>groupID</code> and returns a request in JSON format, to be sent to the service as input:</p>
+
+<pre><code class="language-python">def json_input(x, y, c, d, groupID):
+    dict1 = {'x': x, 'y': y, 'c': c, 'd': d, 'groupID': groupID}
+    return json.dumps(dict1)
+</code></pre>
+
+<p>Next, we analyse <code>get_response</code>:</p>
+
+<pre><code class="language-python"># Teams should choose a non-guessable groupID
+def get_response(x, y, c, d, groupID):
+    # open connection to database
+    conn = sqlite3.connect(&quot;points.db&quot;)
+    conn.row_factory = sqlite3.Row
+    conn_cursor = conn.cursor()
+
+    # convert sage integers to string to avoid &quot;Python int too large for SQLite INTEGER&quot;
+    x = str(x)
+    y = str(y)
+    c = str(c)
+    d = str(d)
+
+    # Select records that map to the same X value
+    conn_cursor.execute(&quot;SELECT * FROM points WHERE x = :x&quot;, {&quot;x&quot;: x})
+    query = conn_cursor.fetchall()
+
+    # No record found -&gt; Point is not yet included
+    if len(query) == _sage_const_0 :
+        # Insert point into database
+        conn_cursor.execute(&quot;INSERT INTO points (x, y, c, d, groupID) VALUES (?, ?, ?, ?, ?)&quot;,
+                  (x, y, c, d, groupID))
+        # Get number of points added by this group
+        conn_cursor.execute(&quot;SELECT x FROM points WHERE groupID = :gID&quot;, {&quot;gID&quot;: groupID})
+        points_found = conn_cursor.fetchall()
+        add_param = ', &quot;points_found&quot;: %d' % len(points_found)
+        # When they found POINT_TRESHOLD distinguished points and a collision occured, return the colliding values as well
+        if len(points_found) &gt; POINT_TRESHOLD:
+            add_param += ', &quot;flag1&quot;: &quot;%s&quot;' % FLAG1
+            if server.collision_found:
+                # compute x from the collision, second flag is just x (not in flag format)
+                add_param += ', &quot;collision&quot;: %s' % (server.collision)
+        response = json_response(_sage_const_0 , add_param)
+    else:
+        # One (or more) records found -&gt; check if they have the same exponents
+        is_included = False
+        for row in query:
+            if row[&quot;c&quot;] == c and row[&quot;d&quot;] == d:
+                is_included = True
+                response = json_response(_sage_const_2 )
+                break
+
+        if not is_included:
+            # Exponents are different -&gt; Collision found, add this point
+            conn_cursor.execute(&quot;INSERT INTO points (x, y, c, d, groupID, collision) VALUES (?, ?, ?, ?, ?, 1)&quot;,
+                      (x, y, c, d, groupID))
+            # Get number of points added by this group
+            conn_cursor.execute(&quot;SELECT x FROM points WHERE groupID = :gID&quot;, {&quot;gID&quot;: groupID})
+            points_found = conn_cursor.fetchall()
+            add_param = ', &quot;points_found&quot;: %d' % len(points_found)
+            # add collision
+            server.collision_found = True
+            server.collision = '{&quot;c_1&quot;: %s, &quot;d_1&quot;: %s, &quot;c_2&quot;: %s, &quot;d_2&quot;: %s}' % (c, d, row[&quot;c&quot;], row[&quot;d&quot;])
+            if len(points_found) &gt; POINT_TRESHOLD:
+                add_param += ', &quot;collision&quot;: %s' % (server.collision)
+            else:
+                add_param += ', &quot;collision&quot;: &quot;collision found but not enough distinguished points submitted yet&quot;'
+
+            response = json_response(_sage_const_1 , add_param + ', &quot;c&quot;: %s, &quot;d&quot;: %s' % (row[&quot;c&quot;], row[&quot;d&quot;]))
+
+    # close db connection and return response
+    conn.commit()
+    conn_cursor.close()
+    conn.close()
+    return response
+</code></pre>
+
+<p><code>get_response</code> does the following:</p>
+
+<ol>
+<li>Selects all rows from the database points.db that have the same value of x and checks if there exists any record that contains the same record ie. it checks if len(query) == 0</li>
+<li>If the condition is true (there already exist records having same x), it checks whether ​c and d are same for the similar records found in step-1.
+
+<ul>
+<li>If true, then an exact same input already exists in the database and hence it throws a JSON response “Point already included“.</li>
+<li>If false, then a <strong>collision is found</strong>. This implies that for a particular value of point <code>X</code>, we have found two pairs of exponents such that
+
+<ul>
+<li>\(X = c_1*P + d_1*Q = c_2*P + d_2*Q\)</li>
+<li>Service adds this point to the database.</li>
+<li>It then calculates all x for which the groupID is same and assigns points_found = # x found.</li>
+<li>The counter points_found increases by one if a collision is found for a particular value of X.  It checks if points_found &gt; 200 and displays output according to that (which does not affect our exploit since we only want points_found &gt; 200 at some point of time, to get the flag)</li>
+</ul></li>
+</ul></li>
+<li>If the condition is false (point X is not present in the database)
+
+<ul>
+<li>Add the input points to the database</li>
+<li>It then calculates all x for which the groupID is same and assigns points_found = # x found</li>
+<li>It then checks if points_found &gt; 200.
+
+<ul>
+<li>If true then it displays the flag for our challenge!</li>
+</ul></li>
+</ul></li>
+</ol>
+
+<h2 id="the-exploit">The Exploit</h2>
+
+<p>We know from the property of Elliptic Curves that \(n*P = 0\), where <code>n</code> is the order of the subgroup generated by a point \(P\) on an Elliptic Curve. We can use this property to exploit this challenge. Let us see how:</p>
+
+<p>If we set d = 0,
+$$\forall i\in \mathbb{I}, X = ((i*n+c)*P) + (0*Q) = ((i*n+c)*P)$$</p>
+
+<p>We will now keep sending \(c, d\) as \((c, 0), (c+n, 0), (c+2n, 0), &hellip;, (c+200n, 0)\) having the same <code>groupID</code> (random enough to not collide with any other team’s groupID) and get 201 collisions which is just enough for us to get the flag. How? For the corresponding <code>groupID</code>, <code>points_found</code> = 201 &gt; 200.</p>
+
+<p>Then we send a random point on the curve having the same groupID as above and which is not there in the database. This will then pass the condition len(points_found) &gt; 200 and give us the flag.</p>
+
+<p>I wrote the script below to implement this attack in python. Note that ecauth is the python file I imported for doing Elliptic Curve operations:</p>
+
+<pre><code class="language-python">import ecauth
+import sqlite3
+import json
+from pwn import *
+
+def json_input(x, y, c, d, groupID):
+    dict1 = {'x': x, 'y': y, 'c': c, 'd': d, 'groupID': groupID}
+    return json.dumps(dict1)
+
+def create_curve():
+    p = 889774351128949770355298446172353873
+    a = 12345
+    b = 67890
+    curve = ecauth.CurveFp(p, a, b)
+    return curve
+
+def base_point(curve, x, y, _order_point):
+    P = ecauth.Point(curve, x, y, _order_point)
+    return P
+
+curve = create_curve()
+
+_order_P = 79182553273022138539034276599687
+_Px = 238266381988261346751878607720968495
+_Py = 591153005086204165523829267245014771
+P = base_point(curve, _Px, _Py, _order_P)
+
+_Qx = 341454032985370081366658659122300896
+_Qy = 775807209463167910095539163959068826
+Q = base_point(curve, _Qx, _Qy, _order_P)
+
+prev = 56558*P + 0*Q
+for i in range(210):
+    r = remote(&quot;arcade.fluxfingers.net&quot;,&quot;1822&quot;)
+    param = i*_order_P
+    Point_x = (param + 56558)*P + 0*Q
+    assert prev.x() == Point_x.x() and prev.y() == Point_x.y()
+    data = json_input(Point_x.x(), Point_x.y(), param + 56558, 0, 888698063901)
+    r.send(data)
+    print i
+    print r.recv()
+    r.close()
+
+r = remote(&quot;arcade.fluxfingers.net&quot;,&quot;1822&quot;)
+Point_y = 35939*P + 11*Q
+data2 = json_input(Point_y.x(), Point_y.y(), 35939, 11, 888698063901)
+r.send(data2)
+print r.recv()
+r.close()
+</code></pre>
+
+<p>Running the above script gives us the flag!</p>
+
+<p><img src="/hacklu18-crypto-6.png" alt="picture" /></p>
+
+<p>Voila! It was fun!</p>
+
+<p>However, this approach will not get us a flag for the Multiplayer Part-2 (Find out why)! Waiting for the challenge author to discuss the intended solution for Multiplayer Part-2.</p>
+
+<p>UPDATE: Got the intended approach for both parts of this challenge: <a href="https://link.springer.com/content/pdf/10.1007%2F3-540-45537-X_17.pdf">https://link.springer.com/content/pdf/10.1007%2F3-540-45537-X_17.pdf</a>. Thanks to asante!</p>
+
+</main>
+
+    <footer>
+      
+<script>
+(function() {
+  function center_el(tagName) {
+    var tags = document.getElementsByTagName(tagName), i, tag;
+    for (i = 0; i < tags.length; i++) {
+      tag = tags[i];
+      var parent = tag.parentElement;
+      
+      if (parent.childNodes.length === 1) {
+        
+        if (parent.nodeName === 'A') {
+          parent = parent.parentElement;
+          if (parent.childNodes.length != 1) continue;
+        }
+        if (parent.nodeName === 'P') parent.style.textAlign = 'center';
+      }
+    }
+  }
+  var tagNames = ['img', 'embed', 'object'];
+  for (var i = 0; i < tagNames.length; i++) {
+    center_el(tagNames[i]);
+  }
+})();
+</script>
+
+      
+      <hr/>
+      <a href="https://www.linkedin.com/in/ashutosh1206/"><img src='/linkedin.svg' style='max-width:3%' alt='LinkedIn account' /></a> <a href="https://twitter.com/ashutosha_"><img src='/twitter.svg' style='max-width:3%' alt='Twitter handle' /></a> <a href="https://github.com/ashutosh1206"><img src='/github.svg' style='max-width:3%' alt='GitHub account' /></a>
+      
+    </footer>
+  </body>
+</html>
+

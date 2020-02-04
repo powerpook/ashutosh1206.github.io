@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Halloween Party - ASIS CTF Quals | Ashutosh</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="https://ashutosh1206.github.io/css/theme-override.css">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.css" integrity="sha384-D+9gmBxUQogRLqvARvNLmA9hS2x//eK1FhVb9PiU86gmcrBrJAQT8okdJ4LMp2uv" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.js" integrity="sha384-483A6DwYfKeDa0Q52fJmxFXkcPCFfnXMoXblOkJ4JcA8zATN6Tm78UNL72AKk+0O" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/contrib/auto-render.min.js" integrity="sha384-yACMu8JWxKzSp/C1YV86pzGiQ/l1YUfE8oPuahJQxzehAjEt2GiQuy/BIvl9KyeF" crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body);
+        });
+    </script>
+
+<header>
+
+  
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <nav>
+    <ul>
+      
+      
+      <li class="pull-left ">
+        <a href="https://ashutosh1206.github.io">/home/ashutosh</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/post/">Blog</a>
+      </li>
+      
+      
+      <li class="pull-left current">
+        <a href="/writeups/">Writeups</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/talks/">Talks</a>
+      </li>
+      
+
+      
+      
+      <li class="pull-right">
+        <a href="/categories/">~/categories</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/tags/">~/tags</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/index.xml">~/subscribe</a>
+      </li>
+      
+
+    </ul>
+  </nav>
+</header>
+
+    
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-157739046-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+  </head>
+
+  <body>
+    <br/>
+
+<div class="article-meta">
+<h1><span class="title">Halloween Party - ASIS CTF Quals</span></h1>
+<h2 class="author">Ashutosh Ahelleya</h2>
+<h2 class="date">2019/04/23</h2>
+<p class="terms">
+  
+  
+  Categories: <a href="/categories/crypto">Crypto</a> 
+  
+  
+  
+  Tags: <a href="/tags/elliptic-curves">Elliptic-Curves</a> 
+  
+  
+</p>
+</div>
+
+
+
+<main>
+
+
+<p><strong>Challenge Points</strong>: 182<br />
+<strong>Challenge Description</strong>:</p>
+
+<blockquote>
+<p>In the halloween party, we want to half a delicious but small cake!</p>
+</blockquote>
+
+<p>tl;dr</p>
+
+<ol>
+<li>Find Elliptic Curve parameters from given points on the curve<br /></li>
+<li>Find x-coordinate of 2*P, given y-coordinate of 2*P<br /></li>
+<li>Invert 2 over mod (P.order()) and multiply the result with 2*P to get P<br /></li>
+<li>Submit ASIS{P.x} as the flag<br /></li>
+</ol>
+
+<p>In case you are new to Elliptic Curves, you can read about them <u><a href="https://github.com/ashutosh1206/Crypton/tree/master/Elliptic-Curves">in my library here</a></u></p>
+
+<h2 id="preliminary-analysis">Preliminary Analysis</h2>
+
+<p>We are given a script that implements a basic Elliptic Curve (Weierstraas model)<br />
+$$ y^2 \equiv x^3 + a*x + b\mod p $$</p>
+
+<pre><code class="language-python">#!/usr/bin/env python
+
+from fastecdsa.curve import Curve
+from fastecdsa.point import Point
+from Crypto.Util.number import *
+from secret import EC_params, flag, Q
+
+
+p, a, b, q, Px, Py = EC_params
+C = Curve('halloween', p, a, b, q, Px, Py)
+P = Point(Px, Py, curve = C)
+P1 = Point(p + 1, 467996041489418065436268622304855825266338280723, curve = C)
+P2 = Point(p - 1, 373126988100715326072483107245781156204485119489, curve = C)
+P3 = Point(p + 3, 245091091146774561796627894715885724307214901148, curve = C)
+
+assert (2*P).x == Q.x
+assert bytes_to_long(flag) == P.x
+assert ((-1) * Q).y == 621803439821606291947646422656643138592770518069
+</code></pre>
+
+<p>The script is importing EC parameters from a secret file, hence our first task becomes recovering the
+Elliptic Curve parameters.</p>
+
+<p>Notice that we are given three points on the curve: <code>P1</code>, <code>P2</code> and <code>P3</code>, coordinates of which are known to us. We can use these points to get the values of curve parameters.</p>
+
+<p><br></p>
+
+<h2 id="retrieving-ec-parameters">Retrieving EC parameters</h2>
+
+<p>Let \(P_1 = (x_1, y_1)\), \(P_2 = (x_2, y_2)\) &amp; \(P_3 = (x_3, y_3)\)<br />
+This implies:<br />
+\(y_1^2 = x_1^3 + a*x_1 + b \mod p\)<br />
+\(y_2^2 = x_2^3 + a*x_2 + b \mod p\)<br />
+\(y_3^2 = x_3^3 + a*x_3 + b \mod p\)</p>
+
+<p>Substituting values of \(P_1 = (x_1, y_1)\), \(P_2 = (x_2, y_2)\) &amp; \(P_3 = (x_3, y_3)\) and solving for a, b, p, we get:</p>
+
+<pre><code class="language-python">p = 883097976585278660619269873521314064958923370261
+b = 433481663214462017150295835098295925800218140157
+a = 48029713913392144447486256568923103286673283937
+</code></pre>
+
+<p><br></p>
+
+<h2 id="observations-related-to-the-curve">Observations related to the curve</h2>
+
+<p>There are a few assertions in the challenge script:</p>
+
+<pre><code class="language-python">assert (2*P).x == Q.x
+assert bytes_to_long(flag) == P.x
+assert ((-1) * Q).y == 621803439821606291947646422656643138592770518069
+</code></pre>
+
+<p>As one can see, our goal is to find the x-coordinate of \(P\), which is the flag.</p>
+
+<p>It is given that x-coordinate of \(P&rsquo; = 2*P\) (<a href="https://github.com/ashutosh1206/Crypton/tree/master/Elliptic-Curves#scalar-multiplication">scalar multiplication</a>) is equal to x-coordinate of \(Q\). <strong>Note</strong>, this can
+only happen when y-coordinate of \(Q\) is an additive inverse of y-coordinate of \(P&rsquo;\).</p>
+
+<p>Let us try to understand the reason behind the above:</p>
+
+<ol>
+<li>Consider an Elliptic Curve \(y^2\equiv x^3 + a*x + b\mod p\),<br /></li>
+<li>If two points A = (x<sub>1</sub>, y<sub>1</sub>) and B = (x<sub>2</sub>, y<sub>2</sub>) have same x-coordinate, then we can write:<br />
+
+<ul>
+<li>\(y_1^2 \equiv c\mod p \)<br /></li>
+<li>\(y_2^2 \equiv c\mod p \)<br /></li>
+</ul></li>
+<li>Provided y<sub>1</sub> != y<sub>2</sub>, we can say that \(y_1 \equiv -y_2 \mod p\) as:<br />
+
+<ul>
+<li>\(y_1^2 \equiv (-y_2)^2 \equiv c\mod p\)<br /></li>
+</ul></li>
+</ol>
+
+<p>We are given y-coordinate of \((-1)*Q\), which implies that we are given the y-coordinate of \(P&rsquo;\)</p>
+
+<p>On the basis of observations above, we can draw the Elliptic Curve and mark relevant points:</p>
+
+<p><img src="/asisquals19-halloween-1.png"></p>
+
+<p>Note that the above diagram is made for Curve over \(\mathbb{R}\), whereas our Curve is defined over \(GF(p)\), but the idea remains the same! Also, \(P+P == 2*P\)</p>
+
+<p><br></p>
+
+<h2 id="finding-x-coordinate-of-q">Finding x-coordinate of Q</h2>
+
+<p>Provided y-coordinate of a point on the curve, we can compute it&rsquo;s corresponding x-coordinate by finding solutions of the equation: \(x^3 + a*x + (b-y^2) \equiv 0 \mod p\)</p>
+
+<p>Values of a, b, p in our challenge are as follows:</p>
+
+<pre><code class="language-python">a = 48029713913392144447486256568923103286673283937
+b = 433481663214462017150295835098295925800218140157
+p = 883097976585278660619269873521314064958923370261
+</code></pre>
+
+<p>We computed the x-coordinate of Q by running the following function in Mathematica:</p>
+
+<pre><code class="language-python">Solve[x^3 + 48029713913392144447486256568923103286673283937 x +
+837637963235166117552443765282645351326329278968 == 0, x, Modulus
+-&gt;883097976585278660619269873521314064958923370261]
+</code></pre>
+
+<p>Alternatively, you can also use roots() in sagemath:</p>
+
+<pre><code class="language-python">a = 48029713913392144447486256568923103286673283937
+b = 433481663214462017150295835098295925800218140157
+p = 883097976585278660619269873521314064958923370261
+
+P.&lt;X&gt; = PolynomialRing(GF(p))
+f=X^3+a*X+b-Qiy^2
+Qix=f.roots()[0][0]
+</code></pre>
+
+<p><em>Source</em>: HATS SG team&rsquo;s solution script - <u><a href="https://pastebin.com/cUAa6R9W">https://pastebin.com/cUAa6R9W</a></u></p>
+
+<p>Recovered x-coordinate of \(Q\) as: <code>708927573459527177103235542148826237228344428002</code>
+Since x-coordinate of \(Q\) and that of \(P&rsquo;=2*P\) is the same, we have both x and y-coordinates of \(P&rsquo;\).</p>
+
+<p>Knowledge of both coordinates of \(2*P\) would be adequate to get coordinates of \(P\)</p>
+
+<p><br></p>
+
+<h2 id="finding-x-coordinate-of-p">Finding x-coordinate of P</h2>
+
+<p>Let the order of subgroup generated by \(P\) be ord<sub>P</sub>. We can then write:<br />
+\(2*P = P&rsquo; \)<br />
+\(P = ({2^{-1}\mod ord_P})*P&rsquo; \)</p>
+
+<p>But, how do we find order of subgroup generated by \(P\)?</p>
+
+<p>We know from <a href="https://en.wikipedia.org/wiki/Lagrange%27s_theorem_%28group_theory%29">Lagrange&rsquo;s Theorem</a> that order of the subgroup generated by a point \(P\) on the curve is a factor of cardinality of the curve.</p>
+
+<p>But if \(P\) is a <strong>generator</strong>, then order of the subgroup generated by \(P\) is exactly equal to the cardinality of the curve. We can find out cardinality of a curve \(E\) using the following function in python/sage:</p>
+
+<pre><code class="language-python">E.cardinality()
+</code></pre>
+
+<p>Cardinality of our curve has several factors: [3, 5, 13, 257, 134021890447, 97090721460179,
+1354215209508238123] and order of \(P\) can be a factor of combination of any of these factors.</p>
+
+<p>But we went on further anyway, assuming that P is a generator for the curve given in this challenge and got the correct coordinates :)</p>
+
+<p>You can read the full solution script here:</p>
+
+<pre><code class="language-python">from Crypto.Util.number import *
+from sage.all import *
+
+y1 = 467996041489418065436268622304855825266338280723
+y2 = 373126988100715326072483107245781156204485119489
+y3 = 245091091146774561796627894715885724307214901148
+
+b = 433481663214462017150295835098295925800218140157
+a = 48029713913392144447486256568923103286673283937
+p = 883097976585278660619269873521314064958923370261
+E = EllipticCurve(GF(p), [a, b])
+P1 = E((p+1, y1))
+P2 = E((p-1, y2))
+P3 = E((p+3, y3))
+
+Q_y = -621803439821606291947646422656643138592770518069 % p
+_2P_y = 621803439821606291947646422656643138592770518069
+
+# Use Mathematica to solve, sagemath's solve_mod shows overflow
+# Solve[x^3 + 48029713913392144447486256568923103286673283937 x + 837637963235166117552443765282645351326329278968 == 0, x, Modulus -&gt;883097976585278660619269873521314064958923370261]
+Q_x = 708927573459527177103235542148826237228344428002L
+_2P_x = Q_x
+
+Q = E((Q_x, Q_y))
+_2P = E((_2P_x, _2P_y))
+print Q
+print &quot;\n&quot;
+print _2P
+
+assert _2P[0] == Q[0]
+
+list1 = [3, 5, 13, 257, 134021890447, 97090721460179, 1354215209508238123]
+_cardinality = reduce(lambda i, j: i*j, list1)
+
+tP = inverse_mod(2, _cardinality)*_2P
+if 2*tP == _2P:
+    print &quot;Voila! P:&quot;, tP
+</code></pre>
+
+<p>On running the above code, we got the coordinates of P as: (804028439497151963978256498500182891314861988389, 272052071247970914287181631972199909106801861256)</p>
+
+<p>Flag: <strong>ASIS{804028439497151963978256498500182891314861988389}</strong></p>
+
+<p>In case of any query, feedback or suggestion, feel free to comment or reach <a href="https://twitter.com/ashutosha_">me out on Twitter</a>!</p>
+
+</main>
+
+    <footer>
+      
+<script>
+(function() {
+  function center_el(tagName) {
+    var tags = document.getElementsByTagName(tagName), i, tag;
+    for (i = 0; i < tags.length; i++) {
+      tag = tags[i];
+      var parent = tag.parentElement;
+      
+      if (parent.childNodes.length === 1) {
+        
+        if (parent.nodeName === 'A') {
+          parent = parent.parentElement;
+          if (parent.childNodes.length != 1) continue;
+        }
+        if (parent.nodeName === 'P') parent.style.textAlign = 'center';
+      }
+    }
+  }
+  var tagNames = ['img', 'embed', 'object'];
+  for (var i = 0; i < tagNames.length; i++) {
+    center_el(tagNames[i]);
+  }
+})();
+</script>
+
+      
+      <hr/>
+      <a href="https://www.linkedin.com/in/ashutosh1206/"><img src='/linkedin.svg' style='max-width:3%' alt='LinkedIn account' /></a> <a href="https://twitter.com/ashutosha_"><img src='/twitter.svg' style='max-width:3%' alt='Twitter handle' /></a> <a href="https://github.com/ashutosh1206"><img src='/github.svg' style='max-width:3%' alt='GitHub account' /></a>
+      
+    </footer>
+  </body>
+</html>
+

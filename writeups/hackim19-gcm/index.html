@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GCM - Nullcon HackIM CTF | Ashutosh</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="https://ashutosh1206.github.io/css/theme-override.css">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.css" integrity="sha384-D+9gmBxUQogRLqvARvNLmA9hS2x//eK1FhVb9PiU86gmcrBrJAQT8okdJ4LMp2uv" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.js" integrity="sha384-483A6DwYfKeDa0Q52fJmxFXkcPCFfnXMoXblOkJ4JcA8zATN6Tm78UNL72AKk+0O" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/contrib/auto-render.min.js" integrity="sha384-yACMu8JWxKzSp/C1YV86pzGiQ/l1YUfE8oPuahJQxzehAjEt2GiQuy/BIvl9KyeF" crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body);
+        });
+    </script>
+
+<header>
+
+  
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <nav>
+    <ul>
+      
+      
+      <li class="pull-left ">
+        <a href="https://ashutosh1206.github.io">/home/ashutosh</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/post/">Blog</a>
+      </li>
+      
+      
+      <li class="pull-left current">
+        <a href="/writeups/">Writeups</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/talks/">Talks</a>
+      </li>
+      
+
+      
+      
+      <li class="pull-right">
+        <a href="/categories/">~/categories</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/tags/">~/tags</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/index.xml">~/subscribe</a>
+      </li>
+      
+
+    </ul>
+  </nav>
+</header>
+
+    
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-157739046-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+  </head>
+
+  <body>
+    <br/>
+
+<div class="article-meta">
+<h1><span class="title">GCM - Nullcon HackIM CTF</span></h1>
+<h2 class="author">Ashutosh Ahelleya</h2>
+<h2 class="date">2019/02/05</h2>
+<p class="terms">
+  
+  
+  Categories: <a href="/categories/crypto">Crypto</a> 
+  
+  
+  
+  Tags: <a href="/tags/ctr-bit-flippping">CTR-Bit-Flippping</a> <a href="/tags/gcm">GCM</a> 
+  
+  
+</p>
+</div>
+
+
+
+<main>
+
+
+<p><strong>Challenge Points</strong>: 300<br />
+<strong>Challenge Description</strong>: [None]</p>
+
+<p>tl;dr</p>
+
+<ol>
+<li>CTR Bit Flipping</li>
+<li>Break GHASH to get authentication key <strong>H</strong> (unintended approach)</li>
+<li>Bypass authentication</li>
+</ol>
+
+<p>The way we solved it (unintended approach) was pretty interesting!</p>
+
+<h2 id="challenge-internals">Challenge Internals</h2>
+
+<p>We are given a service that allows us to encrypt/decrypt data using AES-CTR mode. Code for this is as follows:</p>
+
+<pre><code class="language-python">def main():
+    global sessionid
+    username = input('Enter username: ')
+    sessionid = sha256(username.encode()).digest()[:10]
+
+    while True:
+        print(&quot;Menu&quot;)
+        print(&quot;[1] Encrypt&quot;)
+        print(&quot;[2] Decrypt&quot;)
+        print(&quot;[3] Exit&quot;)
+
+        choice = input(&quot;&gt; &quot;)
+
+        if choice == '1':
+            msg = input('Enter message to be encrypted: ')
+            if 'flag' in msg:
+                print(&quot;You cant encrypt flag :(&quot;)
+                continue
+            c = encrypt(msg.encode())
+            nonce = hexlify(c[0]).decode()
+            ciphertext = hexlify(c[1]).decode()
+            tag = hexlify(c[2]).decode()
+            print(nonce + ':' + ciphertext + ':' + tag)
+            continue
+
+        if choice == '2':
+            nonce, ciphertext, tag = input(
+                'Enter message to be decrypted: ').split(':')
+            nonce = long_to_bytes(int(nonce, 16))
+            ciphertext = long_to_bytes(int(ciphertext, 16))
+            tag = long_to_bytes(int(tag, 16))
+            pt = decrypt(nonce, ciphertext, tag).decode()
+            if pt == 'may i please have the flag':
+                print(&quot;Congrats %s&quot; % username)
+                print(&quot;Here is your flag: %s&quot; % flag)
+            print(pt)
+            continue
+
+        if choice == '3':
+            break
+</code></pre>
+
+<p>As you can see, the service does not allow encrypting messages that contain &ldquo;flag&rdquo; as a substring. Also, when we choose to decrypt data, the service checks if the decrypted data is equal to &ldquo;may i please have the flag&rdquo;
+and gives the flag only if it is true.</p>
+
+<p>Clearly, we will have to bypass the above service:</p>
+
+<ol>
+<li>Encrypt some data that does not contain &ldquo;flag&rdquo;, let us say &ldquo;may i please have the flak&rdquo;</li>
+<li>Flip some bytes and get ciphertext of &ldquo;may i please have the flag&rdquo;</li>
+<li>Send ciphertext obtained in step-(2) for decryption and get the actual flag</li>
+</ol>
+
+<p>If what we just described in the above steps is correct, then a simple <a href="https://github.com/ashutosh1206/Crypton/tree/master/Block-Cipher/Attack-CTR-Bit-Flipping">CTR Bit Flipping attack</a> would be
+sufficient to get the flag.</p>
+
+<p>But things are not easy as they seem to be. Let us look at the encryption and decryption functions:</p>
+
+<pre><code class="language-python">def encrypt(msg):
+    nonce = sessionid + Random.get_random_bytes(2)
+    assert len(nonce) == 12
+    ctr = Counter.new(32, prefix=nonce)
+    cipher = AES.new(key, AES.MODE_CTR, counter=ctr)
+    ciphertext = cipher.encrypt(msg)
+    tag = GHASH(ciphertext, nonce)
+    return (nonce, ciphertext, tag)
+
+
+def decrypt(nonce, ciphertext, tag):
+    assert len(nonce) == 12
+    assert GHASH(ciphertext, nonce) == tag
+    ctr = Counter.new(32, prefix=nonce)
+    cipher = AES.new(key, AES.MODE_CTR, counter=ctr)
+    plaintext = cipher.decrypt(ciphertext)
+    return plaintext
+</code></pre>
+
+<p>As you can see, <code>encrypt()</code> not only encrypts our plaintext, but also creates an authentication tag - <code>tag</code> that happens to be a mitigation to CTR Bit Flipping Attack. Also, <code>decrypt()</code> function verifies if the authentication tag calculated from the ciphertext and authentication tag - <code>tag</code> given as input, match.</p>
+
+<p>An authentication tag is basically a string assigned to a plaintext/ciphertext as a unique identifier. This means that if we flip bytes, we will not have the authentication tag of the corresponding new flipped data and we won&rsquo;t be able to get the flag.</p>
+
+<blockquote>
+<p><strong>Note</strong>: If you want to read more about Authenticated Encryption, you can read it <a href="https://github.com/ashutosh1206/Crypton/tree/master/Authenticated-Encryption">from Crypton</a>. In case you only want to read about Message Authentication Code (MACs), you can read about them <a href="https://github.com/ashutosh1206/Crypton/tree/master/Message-Authentication-Code">from Crypton here</a>.</p>
+</blockquote>
+
+<p>This immediately shifts our target to the function that creates an authentication tag, and search for vulnerabilities that can be exploited, so that we can bypass the authentication.</p>
+
+<h2 id="analysis-of-ghash">Analysis of GHASH</h2>
+
+<p>Function for generating authentication tag - <code>GHASH()</code></p>
+
+<pre><code class="language-python">def GHASH(ciphertext, nonce):
+    assert len(nonce) == 12
+    c = AES.new(key, AES.MODE_ECB).encrypt(nonce + bytes(3) + b'\x01')
+    blocks = group(ciphertext)
+    tag = bytes_to_long(c)
+    for i, b in enumerate(blocks):
+        tag += (bytes_to_long(b) * pow(bytes_to_long(H), i + 1, n)) % n
+    return long_to_bytes(tag)
+</code></pre>
+
+<pre><code>`nonce` : 10 most significant bytes of sha256 of username + 2 random bytes    
+`c`     : AES ECB encryption of (nonce + &quot;\x00\x00\x00\x01&quot;)  
+`b`     : ciphertext block in each iteration (16 bytes)
+</code></pre>
+
+<p>Authentication tag - <code>tag</code> for a <code>k</code>-block plaintext is generated as:<br />
+$$ tag = c + ((b_1 *(H^1\;\%\;n))\;\%\;n) + ((b_2 *(H^2\;\%\;n))\;\%\;n) + &hellip; + ((b_k *(H^k\;\%\;n))\;\%\;n) $$</p>
+
+<p>For a <code>1</code>-block ciphertext, we can write:<br />
+$$ tag = c+((b_1 + (H^1\;\%\;n))\;\%\;n) $$</p>
+
+<p>Thus, if we have <code>c</code> for every session, we can calculate secret value <code>H</code> as:
+$$ (tag-c)*(b^{-1}\mod n) \equiv H^1 \mod n $$</p>
+
+<h2 id="retrieving-c-unintended-approach">Retrieving <code>c</code> - unintended approach</h2>
+
+<p>We know that <code>c</code> is AES ECB encryption of (nonce + &ldquo;\x00\x00\x00\x01&rdquo;)</p>
+
+<p>We observe that:
+AES ECB encryption of (nonce + &ldquo;\x00\x00\x00\x01&rdquo;) is the same as &ldquo;z&rdquo;*16 (one block containing of <code>z</code>&rsquo;s - 16 bytes) XORed with AES CTR encryption of &ldquo;z&rdquo;*16 (one block of <code>z</code>&rsquo;s - 16 bytes).</p>
+
+<p>That is:<br />
+<code>(AES_ECB_enc(nonce + &quot;\x00\x00\x00\x01&quot;))</code> ==  <code>((&quot;zzzzzzzzzzzzzzzz&quot;) xor (AES_CTR_enc(&quot;zzzzzzzzzzzzzzzz&quot;)))</code>.</p>
+
+<p>To get <code>c</code>, we simply send &ldquo;z&rdquo;*16 to the service for encryption and xor the result with &ldquo;z&rdquo;*16 to get <code>c</code></p>
+
+<h2 id="getting-the-flag">Getting the flag</h2>
+
+<p>Now that we know how to calculate <code>c</code>, we can get the flag with the following steps:</p>
+
+<ol>
+<li>Encrypt some data that does not contain &ldquo;flag&rdquo;, let us say &ldquo;may i please have the flak&rdquo;</li>
+<li>Flip some bytes and get ciphertext of &ldquo;may i please have the flag&rdquo;</li>
+<li>Calculate <code>H</code>, get authentication tag for &ldquo;may i please have the flag&rdquo;</li>
+<li>Send ciphertext obtained in (2) for decryption, along with authentication tag obtained in (3) and get the actual flag!</li>
+</ol>
+
+<p>Full exploit:</p>
+
+<pre><code class="language-python">from pwn import *
+from Crypto.Cipher import AES
+from Crypto.Util.number import *
+import hashlib
+
+n = 327989969870981036659934487747327553919
+
+def _encrypt(plaintext):
+    r.recvuntil(&quot;&gt; &quot;)
+    r.sendline(&quot;1&quot;)
+    r.recvuntil(&quot;encrypted: &quot;)
+    r.sendline(plaintext)
+    return r.recvline().strip()
+
+def group(a, length=16):
+    count = len(a) // length
+    if len(a) % length != 0:
+        count += 1
+    return [a[i * length: (i + 1) * length] for i in range(count)]
+
+def GHASH(ciphertext, nonce, c, H):
+    assert len(nonce) == 12
+    blocks = group(ciphertext)
+    tag = bytes_to_long(c)
+    for i, b in enumerate(blocks):
+        tag += (bytes_to_long(b) * pow(H, i + 1, n)) % n
+    return long_to_bytes(tag)
+
+def xor(a, b):
+    assert len(a) == len(b)
+    return ''.join([chr(ord(ai)^ord(bi)) for ai, bi in zip(a,b)])
+
+r = remote(&quot;crypto.ctf.nullcon.net&quot;,&quot;5000&quot;)
+r.recvuntil(&quot;username: &quot;)
+r.sendline(&quot;test&quot;)
+
+# Code for getting the authentication tag
+# nonce, ciphertext, tag = _encrypt(&quot;z&quot;*16).split(&quot;:&quot;)
+# nonce = nonce.decode(&quot;hex&quot;)
+# ciphertext = ciphertext.decode(&quot;hex&quot;)
+# tag = tag.decode(&quot;hex&quot;)
+#
+# assert GCD(bytes_to_long(&quot;z&quot;*16), n) == 1
+# assert bytes_to_long(&quot;z&quot;*16) &lt; n
+#
+# assert len(ciphertext) == 16
+# c = xor(ciphertext, &quot;z&quot;*16)
+# b_inv = inverse(bytes_to_long(&quot;z&quot;*16), n)
+# H = ((bytes_to_long(tag) - bytes_to_long(c)) * b_inv) % n
+#
+# print H
+# print type(H)
+# print GHASH(ciphertext, nonce, c, H)
+# print tag
+
+H = 1100811469918366171773680758187695733
+
+_plaintext = &quot;may i please have the flak&quot;
+_nonce, _ciphertext, _tag = _encrypt(_plaintext).split(&quot;:&quot;)
+_nonce = _nonce.decode(&quot;hex&quot;)
+_ciphertext = _ciphertext.decode(&quot;hex&quot;)
+_tag = _tag.decode(&quot;hex&quot;)
+
+_c = xor(_ciphertext[:16], _plaintext[:16])
+_ciphertext = _ciphertext[:-1] + chr(ord(_ciphertext[-1]) ^ ord('k') ^ ord('g'))
+__tag = GHASH(_ciphertext, _nonce, _c, H)
+
+_ciphertext = _ciphertext.encode(&quot;hex&quot;)
+__tag = __tag.encode(&quot;hex&quot;)
+_nonce = _nonce.encode(&quot;hex&quot;)
+
+r.recvuntil(&quot;&gt; &quot;)
+r.sendline(&quot;2&quot;)
+r.recvuntil(&quot;decrypted: &quot;)
+r.sendline(_nonce + &quot;:&quot; + _ciphertext + &quot;:&quot; + __tag)
+
+print r.recvline()
+print r.recvline()
+</code></pre>
+
+<p>Running this script gave us the flag: <strong>hackim19{forb1dd3n_made_e4sy_a7gh12}</strong></p>
+
+</main>
+
+    <footer>
+      
+<script>
+(function() {
+  function center_el(tagName) {
+    var tags = document.getElementsByTagName(tagName), i, tag;
+    for (i = 0; i < tags.length; i++) {
+      tag = tags[i];
+      var parent = tag.parentElement;
+      
+      if (parent.childNodes.length === 1) {
+        
+        if (parent.nodeName === 'A') {
+          parent = parent.parentElement;
+          if (parent.childNodes.length != 1) continue;
+        }
+        if (parent.nodeName === 'P') parent.style.textAlign = 'center';
+      }
+    }
+  }
+  var tagNames = ['img', 'embed', 'object'];
+  for (var i = 0; i < tagNames.length; i++) {
+    center_el(tagNames[i]);
+  }
+})();
+</script>
+
+      
+      <hr/>
+      <a href="https://www.linkedin.com/in/ashutosh1206/"><img src='/linkedin.svg' style='max-width:3%' alt='LinkedIn account' /></a> <a href="https://twitter.com/ashutosha_"><img src='/twitter.svg' style='max-width:3%' alt='Twitter handle' /></a> <a href="https://github.com/ashutosh1206"><img src='/github.svg' style='max-width:3%' alt='GitHub account' /></a>
+      
+    </footer>
+  </body>
+</html>
+

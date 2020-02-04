@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Simpler Than RSA - MeePwn CTF | Ashutosh</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="https://ashutosh1206.github.io/css/theme-override.css">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.css" integrity="sha384-D+9gmBxUQogRLqvARvNLmA9hS2x//eK1FhVb9PiU86gmcrBrJAQT8okdJ4LMp2uv" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.js" integrity="sha384-483A6DwYfKeDa0Q52fJmxFXkcPCFfnXMoXblOkJ4JcA8zATN6Tm78UNL72AKk+0O" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/contrib/auto-render.min.js" integrity="sha384-yACMu8JWxKzSp/C1YV86pzGiQ/l1YUfE8oPuahJQxzehAjEt2GiQuy/BIvl9KyeF" crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body);
+        });
+    </script>
+
+<header>
+
+  
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <nav>
+    <ul>
+      
+      
+      <li class="pull-left ">
+        <a href="https://ashutosh1206.github.io">/home/ashutosh</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/post/">Blog</a>
+      </li>
+      
+      
+      <li class="pull-left current">
+        <a href="/writeups/">Writeups</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/talks/">Talks</a>
+      </li>
+      
+
+      
+      
+      <li class="pull-right">
+        <a href="/categories/">~/categories</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/tags/">~/tags</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/index.xml">~/subscribe</a>
+      </li>
+      
+
+    </ul>
+  </nav>
+</header>
+
+    
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-157739046-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+  </head>
+
+  <body>
+    <br/>
+
+<div class="article-meta">
+<h1><span class="title">Simpler Than RSA - MeePwn CTF</span></h1>
+<h2 class="author">Ashutosh Ahelleya</h2>
+<h2 class="date">2018/03/02</h2>
+<p class="terms">
+  
+  
+  Categories: <a href="/categories/crypto">Crypto</a> 
+  
+  
+  
+  Tags: <a href="/tags/rsa">RSA</a> <a href="/tags/numbertheory">NumberTheory</a> 
+  
+  
+</p>
+</div>
+
+
+
+<main>
+<p><strong>Challenge Points</strong>: 100</p>
+
+<p>We are given an encryption script <a href="https://github.com/ashutosh1206/Crypto-CTF-Writeups/blob/master/2017/MeePwn-CTF/Simpler-Than-RSA/simple.py">simple.py</a>:</p>
+
+<p>Other than the ciphertext, values of <code>n</code>, <code>g</code>, <code>h</code> are also public. The following function is used to generate values for the challenge:</p>
+
+<pre><code class="language-python">def generate(nbits):
+	p = getPrime(nbits)
+	q = getPrime(nbits)
+	n = p * q * p
+	g = random.randint(1, n)
+	h = pow(g, n, n)
+	return (n, g, h)
+</code></pre>
+
+<p>The encryption function:</p>
+
+<pre><code class="language-python">def encrypt(m, n, g, h):
+	r = random.randint(1, n)
+	c = pow(pow(g, m, n) * pow(h, r, n), 1, n)
+	return c
+</code></pre>
+
+<p>As we can see, the ciphertext for each character in the plaintext is generated separately.<br />
+For \(i^{th}\) byte of message we can write the corresponding ciphertext as:<br />
+$$c_i \equiv ((g^{m_i}\mod n) * (h^r\mod n)) \mod n$$
+Given: \(h \equiv g^n \mod n\). We can now write:<br />
+$$c_i \equiv ((g^{m_i}\mod n) * (g^{nr}\mod n)) \mod n$$
+$$\implies c_i \equiv g^{m_i + nr}\mod n$$</p>
+
+<p>Since \(n = p*p*q\),<br />
+\(c_i \equiv g^{m_i + p^2qr}\mod n\)<br />
+\(c_i \equiv g^{m_i + npr}\mod n\) &ndash;&gt; <strong>(1)</strong></p>
+
+<p>Taking power \((p-1)*(q-1)\) on both sides of <strong>(1)</strong>, we get:<br />
+\(c_i^{(p-1)(q-1)}\equiv g^{(m_i + npr)(p-1)(q-1)}\mod n\)<br />
+\(c_i^{(p-1)(q-1)}\equiv g^{m_i(p-1)(q-1)}*g^{nrp(p-1)(q-1)}\mod n \)</p>
+
+<p>Since \(\phi(n) = p(p-1)(q-1)\),<br />
+$$c_i^{(p-1)(q-1)}\equiv g^{m_i(p-1)(q-1)}*g^{nr\phi(n)}\mod n $$</p>
+
+<p>From Euler&rsquo;s Theorem, we have:<br />
+\(a^{\phi(n)}\equiv 1\mod n\)</p>
+
+<p>Hence, we can write:<br />
+\(c_i^{(p-1)(q-1)}\equiv g^{m_i(p-1)(q-1)}\mod n\) &ndash;&gt; <strong>(2)</strong></p>
+
+<p>Now that we have eliminated <code>r</code> from the equation, let us first get the factors of <code>n</code> using <a href="factordb.com">factordb.com</a>:</p>
+
+<pre><code>    p = 1057817919251064684989791981
+    q = 1103935256393984899021164397
+</code></pre>
+
+<p>Now that we have the factors, we can use <strong>(2)</strong> to get solution for each ciphertext byte.<br />
+For each byte, we just have to check for 256 possibilities of corresponding message byte and a total of 54*256 brute-force checks to get the flag (We already know the other values in <strong>(2)</strong>: p, q, \(c_i\)).</p>
+
+<p>Full exploit:</p>
+
+<pre><code class="language-python">import gmpy2
+from Crypto.Util.number import *
+
+n = 1235280093599323856390922798440377476467763531842392869674688408727824382702235317
+g = 1110549711091392805024587195974719739929628997819528005374351081843256209971586072
+h = 610466084395822279908554174354632326166097007218620288020807622478449585661028278
+
+p = 1057817919251064684989791981
+q = 1103935256393984899021164397
+assert (p**2)*q == n
+
+phin = p*(p-1)*(q-1)
+# enc.txt is the ciphertext file
+list1 = open(&quot;enc.txt&quot;,'r').read()[1:-2]
+list1 = list1.split(&quot;,&quot;)
+list1 = [int(i[:-1]) for i in list1]
+
+# Exploit
+list1 = [pow(i, (p-1)*(q-1), n) for i in list1]
+msg = &quot;&quot;
+for i in list1:
+	for j in range(1, 256):
+		if pow(g, j*(p-1)*(q-1), n) == i:
+			msg += chr(j)
+	print msg
+</code></pre>
+
+<p><strong>Flag</strong>: MeePwnCTF{well_is_fact0rizati0n_0nly_w4y_to_s0lve_it?}</p>
+
+</main>
+
+    <footer>
+      
+<script>
+(function() {
+  function center_el(tagName) {
+    var tags = document.getElementsByTagName(tagName), i, tag;
+    for (i = 0; i < tags.length; i++) {
+      tag = tags[i];
+      var parent = tag.parentElement;
+      
+      if (parent.childNodes.length === 1) {
+        
+        if (parent.nodeName === 'A') {
+          parent = parent.parentElement;
+          if (parent.childNodes.length != 1) continue;
+        }
+        if (parent.nodeName === 'P') parent.style.textAlign = 'center';
+      }
+    }
+  }
+  var tagNames = ['img', 'embed', 'object'];
+  for (var i = 0; i < tagNames.length; i++) {
+    center_el(tagNames[i]);
+  }
+})();
+</script>
+
+      
+      <hr/>
+      <a href="https://www.linkedin.com/in/ashutosh1206/"><img src='/linkedin.svg' style='max-width:3%' alt='LinkedIn account' /></a> <a href="https://twitter.com/ashutosha_"><img src='/twitter.svg' style='max-width:3%' alt='Twitter handle' /></a> <a href="https://github.com/ashutosh1206"><img src='/github.svg' style='max-width:3%' alt='GitHub account' /></a>
+      
+    </footer>
+  </body>
+</html>
+

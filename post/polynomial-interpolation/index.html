@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Polynomial Interpolation | Ashutosh</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="https://ashutosh1206.github.io/css/theme-override.css">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.css" integrity="sha384-D+9gmBxUQogRLqvARvNLmA9hS2x//eK1FhVb9PiU86gmcrBrJAQT8okdJ4LMp2uv" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.js" integrity="sha384-483A6DwYfKeDa0Q52fJmxFXkcPCFfnXMoXblOkJ4JcA8zATN6Tm78UNL72AKk+0O" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/contrib/auto-render.min.js" integrity="sha384-yACMu8JWxKzSp/C1YV86pzGiQ/l1YUfE8oPuahJQxzehAjEt2GiQuy/BIvl9KyeF" crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body);
+        });
+    </script>
+
+<header>
+
+  
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <nav>
+    <ul>
+      
+      
+      <li class="pull-left ">
+        <a href="https://ashutosh1206.github.io">/home/ashutosh</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/post/">Blog</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/writeups/">Writeups</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/talks/">Talks</a>
+      </li>
+      
+
+      
+      
+      <li class="pull-right">
+        <a href="/categories/">~/categories</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/tags/">~/tags</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/index.xml">~/subscribe</a>
+      </li>
+      
+
+    </ul>
+  </nav>
+</header>
+
+    
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-157739046-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+  </head>
+
+  <body>
+    <br/>
+
+<div class="article-meta">
+<h1><span class="title">Polynomial Interpolation</span></h1>
+<h2 class="author">Ashutosh Ahelleya</h2>
+<h2 class="date">2017/05/31</h2>
+<p class="terms">
+  
+  
+  
+  
+  
+</p>
+</div>
+
+
+
+<main>
+
+
+<p>I have been reading the paper &ndash; <a href="http://passguardian.com/assets/1979_HowToShareASecret_Shamir.pdf">“How to Share a Secret”</a> in detail for the past few weeks, a revolutionary research paper written by Adi Shamir. This paper, applies some of the concepts of Number Theory and Algebra, one of which is polynomial interpolation, and has been used to construct a secure and reliable key management system. The theorem is simple and easy to understand, and has been applied in the best way one ever could.</p>
+
+<h2 id="theorem-uniqueness-of-polynomial-interpolation">Theorem - Uniqueness of Polynomial Interpolation</h2>
+
+<p>Consider n+1 unequal coordinates \((x_0,y_0)\),\((x_1,y_1)\),\((x_2,y_2)\),&hellip;,\((x_n,y_n)\). According to the theorem of uniqueness of polynomial interpolation, there exists at most one polynomial \(p\) of degree less than or equal to \(n\) such that:
+$$p(x_i)=y_i;\;\;\;i=0,&hellip;,n$$</p>
+
+<p>Remember the uniqueness for the satisfying polynomial is only for a particular degree. There can exist two polynomials of different degrees which contain all of these points.</p>
+
+<h2 id="proof">Proof</h2>
+
+<p>We are going to prove this theorem by contradiction.</p>
+
+<p>Let us assume that there exist two polynomials \(p_1\) and \(p_2\) of degree less than or equal to \(n\), that satisfies:
+$$p_1(x_i) = p_2(x_i) = y_i;\;\;\;i=0,&hellip;,n$$</p>
+
+<p>This implies: All the points lie on the graphs of \(p_1\) and \(p_2\). So, one can conclude that at these points, the difference between the polynomials is zero since the value is same for both of the polynomials on that point. We can generalize this as:
+$$q(x_i) = p_1(x_i) - p_2(x_i);\;\;\; i=0,&hellip;,n$$</p>
+
+<p>The degree of the polynomial \(q(x_i)\) is same as that of \(p_1\) and \(p_2\) i.e. less than or equal to \(n\). We can conclude from the above that:
+$$q(x_i) = 0;\;\;\; i=0,&hellip;,n$$</p>
+
+<p>Clearly, the polynomial has \(n+1\) zeros. How is it possible? How can a polynomial of degree &lt;= \(n\) have \(n+1\) zeros? Yes, it can happen only when the polynomial \(q(x_i)\) is a zero polynomial i.e. value of \(q\) is zero for all values of \(x\) in the Cartesian Plane.</p>
+
+<p>Now, since \(q\) is a zero polynomial, we can write:
+$$q(x_i) = p_1(x_i) - p_2(x_i)$$
+$$0 = p_1(x_i) - p_2(x_i)$$
+$$p_1(x_i) = p_2(x_i)$$</p>
+
+<p>Thus we have proved that the polynomials \(p_2\) and \(p_1\) are identical polynomials, making our assumption wrong. Hence, we have proved the theorem mentioned above by method of contradiction!</p>
+
+</main>
+
+    <footer>
+      
+<script>
+(function() {
+  function center_el(tagName) {
+    var tags = document.getElementsByTagName(tagName), i, tag;
+    for (i = 0; i < tags.length; i++) {
+      tag = tags[i];
+      var parent = tag.parentElement;
+      
+      if (parent.childNodes.length === 1) {
+        
+        if (parent.nodeName === 'A') {
+          parent = parent.parentElement;
+          if (parent.childNodes.length != 1) continue;
+        }
+        if (parent.nodeName === 'P') parent.style.textAlign = 'center';
+      }
+    }
+  }
+  var tagNames = ['img', 'embed', 'object'];
+  for (var i = 0; i < tagNames.length; i++) {
+    center_el(tagNames[i]);
+  }
+})();
+</script>
+
+      
+      <hr/>
+      <a href="https://www.linkedin.com/in/ashutosh1206/"><img src='/linkedin.svg' style='max-width:3%' alt='LinkedIn account' /></a> <a href="https://twitter.com/ashutosha_"><img src='/twitter.svg' style='max-width:3%' alt='Twitter handle' /></a> <a href="https://github.com/ashutosh1206"><img src='/github.svg' style='max-width:3%' alt='GitHub account' /></a>
+      
+    </footer>
+  </body>
+</html>
+

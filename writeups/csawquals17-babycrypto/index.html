@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BabyCrypto - CSAW CTF Quals | Ashutosh</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="https://ashutosh1206.github.io/css/theme-override.css">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.css" integrity="sha384-D+9gmBxUQogRLqvARvNLmA9hS2x//eK1FhVb9PiU86gmcrBrJAQT8okdJ4LMp2uv" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.js" integrity="sha384-483A6DwYfKeDa0Q52fJmxFXkcPCFfnXMoXblOkJ4JcA8zATN6Tm78UNL72AKk+0O" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/contrib/auto-render.min.js" integrity="sha384-yACMu8JWxKzSp/C1YV86pzGiQ/l1YUfE8oPuahJQxzehAjEt2GiQuy/BIvl9KyeF" crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body);
+        });
+    </script>
+
+<header>
+
+  
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <nav>
+    <ul>
+      
+      
+      <li class="pull-left ">
+        <a href="https://ashutosh1206.github.io">/home/ashutosh</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/post/">Blog</a>
+      </li>
+      
+      
+      <li class="pull-left current">
+        <a href="/writeups/">Writeups</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/talks/">Talks</a>
+      </li>
+      
+
+      
+      
+      <li class="pull-right">
+        <a href="/categories/">~/categories</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/tags/">~/tags</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/index.xml">~/subscribe</a>
+      </li>
+      
+
+    </ul>
+  </nav>
+</header>
+
+    
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-157739046-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+  </head>
+
+  <body>
+    <br/>
+
+<div class="article-meta">
+<h1><span class="title">BabyCrypto - CSAW CTF Quals</span></h1>
+<h2 class="author">Ashutosh Ahelleya</h2>
+<h2 class="date">2017/12/05</h2>
+<p class="terms">
+  
+  
+  Categories: <a href="/categories/crypto">Crypto</a> 
+  
+  
+  
+  Tags: <a href="/tags/blockcipher">BlockCipher</a> <a href="/tags/ecb-byte-at-a-time">ECB-byte-at-a-time</a> 
+  
+  
+</p>
+</div>
+
+
+
+<main>
+<p>This challenge was a bit overrated, there were no complications in the challenge, as you will see when we discuss the writeup.</p>
+
+<p>In this challenge, we are supposed to get the flag which is present in the server.<br />
+The server has an input-output program running, which gives AES-ECB encryption of the input given to it. The encryption takes place as follows:</p>
+
+<ol>
+<li>Takes the input from the user</li>
+<li>Appends <code>secret</code> (which is the flag here) to the input</li>
+<li>Pads to make it a multiple of blocksize</li>
+<li>Encrypts the resultant string using AES in ECB mode</li>
+<li>Gives the ciphertext as the output</li>
+</ol>
+
+<p>We are only in control of the input to the server. Using the input that we give, we need to get the <code>secret</code>.</p>
+
+<p>Let us have a look at how the blocks are divided when we send an input of size equal to the blocksize = 16:</p>
+
+<pre><code>       1st Block | 2nd Block | 3rd Block | ...
+       Input     | Secret    | secret+padding ...
+</code></pre>
+
+<p>The first block contains 16 bytes of our input, which is known to us.<br />
+When we send an input of size one less than the blocksize, then the block division is as follows:</p>
+
+<pre><code>        1st Block | 2nd Block    | 3rd Block | ...
+        x         | Secret[1:17] | secret[17:]+padding ...
+</code></pre>
+
+<p>We can apply ECB Byte at a time attack in such a scenario about which you can read here:</p>
+
+<ol>
+<li><a href="https://github.com/ashutosh1206/Crypton/tree/master/Block-Cipher/Attack-ECB-Byte-at-a-Time">https://github.com/ashutosh1206/Crypton/tree/master/Block-Cipher/Attack-ECB-Byte-at-a-Time</a></li>
+<li><a href="http://cryptopals.com/sets/2/challenges/12">http://cryptopals.com/sets/2/challenges/12</a><br /></li>
+</ol>
+
+<p>Here <code>x = input + Secret[0]</code> and let the output in this case be <code>c1</code>.</p>
+
+<p>We know the first 15 bytes of <code>block #1</code>, we can simply brute force 256 possibilities of the 16th byte in <code>block #1</code> by checking the corresponding ciphertexts of <code>block #1</code>.</p>
+
+<p><img src="/csawquals17-babycrypto-1.png" alt="picture" /></p>
+
+<p>For the second byte we send 14 random bytes + 1 byte of secret(we got from previous step) as the input to the server and then brute force for 2nd byte of secret which again has 256 possibilties. We keep on continuing this process to get each byte of the secret and finally get the flag:</p>
+
+<p><img src="/csawquals17-babycrypto-2.png" alt="picture" /></p>
+
+<p><strong>Flag</strong>: flag{Crypt0_is_s0_h@rd_t0_d0&hellip;}</p>
+
+<p>To practice challenges based on this attack, check out challenges given <a href="https://github.com/ashutosh1206/Crypton/tree/master/Block-Cipher/Attack-ECB-Byte-at-a-Time/Challenges">here</a></p>
+
+</main>
+
+    <footer>
+      
+<script>
+(function() {
+  function center_el(tagName) {
+    var tags = document.getElementsByTagName(tagName), i, tag;
+    for (i = 0; i < tags.length; i++) {
+      tag = tags[i];
+      var parent = tag.parentElement;
+      
+      if (parent.childNodes.length === 1) {
+        
+        if (parent.nodeName === 'A') {
+          parent = parent.parentElement;
+          if (parent.childNodes.length != 1) continue;
+        }
+        if (parent.nodeName === 'P') parent.style.textAlign = 'center';
+      }
+    }
+  }
+  var tagNames = ['img', 'embed', 'object'];
+  for (var i = 0; i < tagNames.length; i++) {
+    center_el(tagNames[i]);
+  }
+})();
+</script>
+
+      
+      <hr/>
+      <a href="https://www.linkedin.com/in/ashutosh1206/"><img src='/linkedin.svg' style='max-width:3%' alt='LinkedIn account' /></a> <a href="https://twitter.com/ashutosha_"><img src='/twitter.svg' style='max-width:3%' alt='Twitter handle' /></a> <a href="https://github.com/ashutosh1206"><img src='/github.svg' style='max-width:3%' alt='GitHub account' /></a>
+      
+    </footer>
+  </body>
+</html>
+

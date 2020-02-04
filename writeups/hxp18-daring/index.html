@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daring - Hxp CTF | Ashutosh</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="https://ashutosh1206.github.io/css/theme-override.css">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.css" integrity="sha384-D+9gmBxUQogRLqvARvNLmA9hS2x//eK1FhVb9PiU86gmcrBrJAQT8okdJ4LMp2uv" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.js" integrity="sha384-483A6DwYfKeDa0Q52fJmxFXkcPCFfnXMoXblOkJ4JcA8zATN6Tm78UNL72AKk+0O" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/contrib/auto-render.min.js" integrity="sha384-yACMu8JWxKzSp/C1YV86pzGiQ/l1YUfE8oPuahJQxzehAjEt2GiQuy/BIvl9KyeF" crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body);
+        });
+    </script>
+
+<header>
+
+  
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <nav>
+    <ul>
+      
+      
+      <li class="pull-left ">
+        <a href="https://ashutosh1206.github.io">/home/ashutosh</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/post/">Blog</a>
+      </li>
+      
+      
+      <li class="pull-left current">
+        <a href="/writeups/">Writeups</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/talks/">Talks</a>
+      </li>
+      
+
+      
+      
+      <li class="pull-right">
+        <a href="/categories/">~/categories</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/tags/">~/tags</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/index.xml">~/subscribe</a>
+      </li>
+      
+
+    </ul>
+  </nav>
+</header>
+
+    
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-157739046-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+  </head>
+
+  <body>
+    <br/>
+
+<div class="article-meta">
+<h1><span class="title">Daring - Hxp CTF</span></h1>
+<h2 class="author">Ashutosh Ahelleya</h2>
+<h2 class="date">2018/12/09</h2>
+<p class="terms">
+  
+  
+  Categories: <a href="/categories/crypto">Crypto</a> 
+  
+  
+  
+  Tags: <a href="/tags/rsa">RSA</a> <a href="/tags/numbertheory">NumberTheory</a> 
+  
+  
+</p>
+</div>
+
+
+
+<main>
+<p><strong>Challenge Points</strong>:<br />
+<strong>Challenge Description</strong>:</p>
+
+<blockquote>
+<p>We encrypted our flag, but we lost the keys. Can you help?</p>
+</blockquote>
+
+<p>This was a simple yet a very tricky challenge aimed at testing Number Theory basics. In this challenge we are given a small script:</p>
+
+<pre><code class="language-python">#!/usr/bin/env python3
+import os
+from Crypto.Cipher import AES
+from Crypto.Hash import SHA256
+from Crypto.Util import Counter
+from Crypto.PublicKey import RSA
+
+flag = open('flag.txt', 'rb').read().strip()
+
+key = RSA.generate(1024, e=3)
+open('pubkey.txt', 'w').write(key.publickey().exportKey('PEM').decode() + '\n')
+open('rsa.enc', 'wb').write(pow(int.from_bytes(flag.ljust(128, b'\0'), 'big'), key.e, key.n).to_bytes(128, 'big'))
+
+key = SHA256.new(key.exportKey('DER')).digest()
+open('aes.enc', 'wb').write(AES.new(key, AES.MODE_CTR, counter=Counter.new(128)).encrypt(flag))
+</code></pre>
+
+<p>If we analyse the script carefully, we would notice that the same flag is encrypted in two different, independent ways:</p>
+
+<ol>
+<li>The flag is padded with <code>\x00</code> (null byte) to make the plaintext of size 128 bytes and then encrypted using RSA with public key exponent <code>e</code> = 3</li>
+<li>SHA-256 hash of the RSA private key is calculated, the result of which is then used as a symmetric key to encrypt the unpadded flag using AES in CTR mode.</li>
+</ol>
+
+<p>Some <strong>observations</strong>:</p>
+
+<ol>
+<li>We all know that <code>e = 3</code> is vulnerable to root attack, but here in our challenge, since the flag is padded with null bytes to increase its size to 128 bytes, the root attack won&rsquo;t work since \(pt^3 &gt; n\) and hence will wrap around while calculating the ciphertext
+
+<ul>
+<li><code>pt</code> is the padded plaintext and <code>n</code> is the RSA modulus</li>
+</ul></li>
+<li>When some plaintext is encrypted in CTR mode, remember that the ciphertext size is exactly of the same size as plaintext, since CTR mode is similar to a stream cipher.</li>
+</ol>
+
+<p>Based on the second observation, we can say that since length of ciphertext of AES-encrypted flag is 43 bytes, the original size of the flag is 43 bytes.<br />
+pt = flag + &lsquo;\x00&rsquo;*(128-43) = flag + &lsquo;\x00&rsquo;*85</p>
+
+<p>\(ct \equiv (flag*2^{85*8})^3 \mod n\)<br />
+\(ct \equiv flag^3*2^{680*3} \mod n\)</p>
+
+<p>To compute \(flag^3\mod n\) we can compute:
+$$ct*(2^{-1}\mod n)^{680*3}\mod n$$
+$$\equiv flag^3*2^{680*3}*2^{-680*3}\mod n$$
+$$\equiv flag^3\mod n$$</p>
+
+<p>Probably flag3 &gt; n, since flag is of 43 bytes. Then we can write:<br />
+\(x = flag^3 \% n\)<br />
+\(flag^3 = x + k*n\)</p>
+
+<p>Now if we add multiples of <code>n</code> to <code>x</code> and check if the resultant value is a perfect cube, we can get the flag by taking the cube root. This part of the challenge is similar to Iowe challenge from CSAW CTF Qualifiers 2018: <a href="https://ctftime.org/task/6668">https://ctftime.org/task/6668</a></p>
+
+<p>I wrote the following script to get the flag:</p>
+
+<pre><code class="language-python">#!/usr/bin/env python3
+import os
+from Crypto.Cipher import AES
+from Crypto.Hash import SHA256
+from Crypto.Util import Counter
+from Crypto.Util.number import *
+from Crypto.PublicKey import RSA
+import gmpy2
+
+pubkey = RSA.importKey(open(&quot;pubkey.txt&quot;).read())
+e = pubkey.e
+n = pubkey.n
+rsa_enc = int.from_bytes(open(&quot;rsa.enc&quot;,&quot;rb&quot;).read(), 'big')
+
+assert GCD(2, n) == 1
+# 680 * 3 = 2040
+inv = pow(inverse(2, n), 2040, n)
+aes_enc = open(&quot;aes.enc&quot;,&quot;rb&quot;).read()
+
+# From here we get the size of the actual flag
+assert len(aes_enc) == 43
+print(int.from_bytes(b&quot;aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&quot;.ljust(128,b'\0'), 'big') == int.from_bytes(b&quot;aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&quot;, 'big') &lt;&lt; 680)
+
+rsa_enc = rsa_enc*inv % n
+for i in range(1000):
+    ans = gmpy2.iroot(rsa_enc + i*n, 3)[1]
+    if ans == True:
+        print(&quot;Gotit&quot;, i)
+        pt = int(gmpy2.iroot(rsa_enc + i*n, 3)[0])
+        print(pt.to_bytes(43, 'big'))
+        break
+</code></pre>
+
+<p>You can find all the relevant files <a href="https://github.com/ashutosh1206/Crypto-CTF-Writeups/tree/master/2018/hxp-CTF/daring">here</a>!</p>
+
+</main>
+
+    <footer>
+      
+<script>
+(function() {
+  function center_el(tagName) {
+    var tags = document.getElementsByTagName(tagName), i, tag;
+    for (i = 0; i < tags.length; i++) {
+      tag = tags[i];
+      var parent = tag.parentElement;
+      
+      if (parent.childNodes.length === 1) {
+        
+        if (parent.nodeName === 'A') {
+          parent = parent.parentElement;
+          if (parent.childNodes.length != 1) continue;
+        }
+        if (parent.nodeName === 'P') parent.style.textAlign = 'center';
+      }
+    }
+  }
+  var tagNames = ['img', 'embed', 'object'];
+  for (var i = 0; i < tagNames.length; i++) {
+    center_el(tagNames[i]);
+  }
+})();
+</script>
+
+      
+      <hr/>
+      <a href="https://www.linkedin.com/in/ashutosh1206/"><img src='/linkedin.svg' style='max-width:3%' alt='LinkedIn account' /></a> <a href="https://twitter.com/ashutosha_"><img src='/twitter.svg' style='max-width:3%' alt='Twitter handle' /></a> <a href="https://github.com/ashutosh1206"><img src='/github.svg' style='max-width:3%' alt='GitHub account' /></a>
+      
+    </footer>
+  </body>
+</html>
+

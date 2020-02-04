@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Locked Dungeons 2 - Swamp CTF | Ashutosh</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="https://ashutosh1206.github.io/css/theme-override.css">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.css" integrity="sha384-D+9gmBxUQogRLqvARvNLmA9hS2x//eK1FhVb9PiU86gmcrBrJAQT8okdJ4LMp2uv" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.js" integrity="sha384-483A6DwYfKeDa0Q52fJmxFXkcPCFfnXMoXblOkJ4JcA8zATN6Tm78UNL72AKk+0O" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/contrib/auto-render.min.js" integrity="sha384-yACMu8JWxKzSp/C1YV86pzGiQ/l1YUfE8oPuahJQxzehAjEt2GiQuy/BIvl9KyeF" crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body);
+        });
+    </script>
+
+<header>
+
+  
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <nav>
+    <ul>
+      
+      
+      <li class="pull-left ">
+        <a href="https://ashutosh1206.github.io">/home/ashutosh</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/post/">Blog</a>
+      </li>
+      
+      
+      <li class="pull-left current">
+        <a href="/writeups/">Writeups</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/talks/">Talks</a>
+      </li>
+      
+
+      
+      
+      <li class="pull-right">
+        <a href="/categories/">~/categories</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/tags/">~/tags</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/index.xml">~/subscribe</a>
+      </li>
+      
+
+    </ul>
+  </nav>
+</header>
+
+    
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-157739046-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+  </head>
+
+  <body>
+    <br/>
+
+<div class="article-meta">
+<h1><span class="title">Locked Dungeons 2 - Swamp CTF</span></h1>
+<h2 class="author">Ashutosh Ahelleya</h2>
+<h2 class="date">2018/04/03</h2>
+<p class="terms">
+  
+  
+  Categories: <a href="/categories/crypto">Crypto</a> 
+  
+  
+  
+  Tags: <a href="/tags/cbc-bit-flipping">CBC-Bit-Flipping</a> 
+  
+  
+</p>
+</div>
+
+
+
+<main>
+
+
+<p><strong>Challenge Points</strong>: 498<br />
+<strong>Challenge Description</strong>:</p>
+
+<blockquote>
+<p>The Dungeon Keeper learned from its mistake. This next lock is protected by even stronger encryption. We’re so close to the final level…there has to be a way in.</p>
+</blockquote>
+
+<p>The Dark Dungeon series of crypto challenges were the only ones I enjoyed solving in the CTF. Rest of the crypto challenges were pathetic, involved a lot of guessing and were not really crypto challenges and can be called as puzzles.</p>
+
+<p>However, I did not get time to solve Dark-Dungeons-2 during the CTF, since I was stuck in Pagoda challenges that ate up almost all of my time during the CTF (I solved them during the CTF, but did not enjoy at all)</p>
+
+<p>Similar challenge: <strong>HITCON CTF Quals 2017</strong> - Secret Server</p>
+
+<p>Locked Dungeons-2 is an improved version of Locked-Dungeon-1 challenge from the same CTF. I will post a write-up of Locked Dungeons-1 soon.</p>
+
+<p>In this challenge, we are given an encryption code that is running on the server: <code>nc chal1.swampctf.com 1460</code></p>
+
+<p>Looking at the source code:</p>
+
+<pre><code class="language-python">if __name__ == &quot;__main__&quot;:
+    with open(&quot;flag.txt&quot;) as fd:
+        flag = fd.read()
+    flag_size = len(flag)
+
+    key=KEY
+    insertion_range = flag_size//BLOCK_SIZE
+    insertion_position = random.randrange(insertion_range)*BLOCK_SIZE
+    mod_flag = flag[:insertion_position] + &quot;send_modflag_enc&quot; + flag[insertion_position:]
+
+    aescipher = AESCipher(key)
+    enc_mod_flag = aescipher.encrypt_wrapper(mod_flag, IV)
+    sys.stdout.write(enc_mod_flag)
+    sys.stdout.write('\n')
+    sys.stdout.flush()
+    next_level = False
+
+    for i in range(insertion_range):
+        sys.stdout.write(&quot;What do you want me to do?\n&quot;)
+        sys.stdout.flush()
+        enc_recv_str = raw_input()
+        dec_recv_str = aescipher.decrypt_wrapper(enc_recv_str)
+        if &quot;get_modflag_md5&quot; in dec_recv_str:
+            next_level = True
+            sys.stdout.write(&quot;Dungeon goes deeper..\n&quot;)
+            sys.stdout.flush()
+            break
+        else:
+            sys.stdout.write(&quot;I am gonna ask again!\n&quot;)
+            sys.stdout.flush()
+
+    if next_level:
+        len_enc_mod_flag = len(enc_mod_flag)
+        inp_size_limit = int(len_enc_mod_flag*4/3) + 50
+        for i in xrange(500):
+            enc_recv_str = raw_input()
+            if len(enc_recv_str) &gt; inp_size_limit:
+                continue
+            dec_recv_str = aescipher.decrypt_wrapper(enc_strrecv_str)
+            sys.stdout.write(b64encode(md5(dec_recv_str).digest()))
+            sys.stdout.write(&quot;\n&quot;)
+            sys.stdout.flush()
+</code></pre>
+
+<h2 id="the-vulnerability">The Vulnerability</h2>
+
+<p>There are two levels in the challenge, each level involving the following attacks:</p>
+
+<ol>
+<li>CBC Bit Flipping Attack</li>
+<li>Byte by Byte decryption due to vulnerable unpadding</li>
+</ol>
+
+<p>Let us have a look at the first level:
+<img src="/swamp18-lockeddungeons-1.png" alt="picture" /></p>
+
+<ol>
+<li>The program encrypts <strong>mod_flag</strong> = flag[:insertion_position] +  “send_modflag_enc” + flag[insertion_position:] using AES in CBC mode.</li>
+<li><em>insertion_position</em> is generated using a pseudo-random number generator, with its limits being from 0 to flag_size*16. <u>Small enough to be brute-forced</u>.</li>
+</ol>
+
+<p>To pass level-1, our motive as an attacker, is to flip “send_modflag_enc” to “get_modflag_md5\x01”, given the ciphertext of <strong>mod_flag</strong>. The server allows decryption of ciphertext. We can do this using CBC Bit Flipping attack, about which you can read here: <a href="https://masterpessimistaa.wordpress.com/2017/05/03/cbc-bit-flipping-attack/">https://masterpessimistaa.wordpress.com/2017/05/03/cbc-bit-flipping-attack/</a></p>
+
+<p>This is what decryption looks like in CBC mode:
+<img src="/ctfzone18-ussh-11.png" alt="picture" /></p>
+
+<p>To pass level-1 we brute-force the program until <em>insertion_position</em> becomes zero, so that “send_modflag_enc” comes in the first block of ciphertext and we can then flip it easily as we are in control of the <strong>Initialisation Vector</strong>. We know can do this by changing IV to:</p>
+
+<pre><code>IV = IV xor “send_modflag_enc” xor “get_modflag_md5\x01”
+</code></pre>
+
+<p>Code snippet implementing the brute force first and then Bit Flipping Attack on CBC mode:</p>
+
+<pre><code class="language-python">while fl == 0:
+    r = remote(&quot;chal1.swampctf.com&quot;,&quot;1460&quot;)
+    ct = r.recvline()
+    ct = ct.replace(&quot;\n&quot;,&quot;&quot;)
+    ct = ct.decode(&quot;base64&quot;)
+
+    r.recvline()
+
+    init_vector = ct[:16]
+    ciphertext = ct[16:]
+
+    res = xor(&quot;get_modflag_md5\x00&quot;,&quot;send_modflag_enc&quot;)
+    assert xor(res, &quot;send_modflag_enc&quot;) == &quot;get_modflag_md5\x00&quot;
+
+    # CBC Bit Flipping Attack
+    iv = xor(xor(&quot;get_modflag_md5\x00&quot;,&quot;send_modflag_enc&quot;), init_vector)
+
+    send_string = (iv + ciphertext).encode(&quot;base64&quot;).replace(&quot;\n&quot;,&quot;&quot;)
+    print &quot;Sending string: &quot;, send_string
+
+    r.sendline(send_string)
+    recvline1 = r.recvline()
+    print recvline1.strip(&quot;\n&quot;)
+    if recvline1[:21] == &quot;Dungeon goes deeper..&quot;:
+        fl = 1
+        break
+    r.close()
+</code></pre>
+
+<p>Now that we have bypassed the first level of the challenge, we can look at the code for the <strong>second level</strong>:
+<img src="/swamp18-lockeddungeons-2.png" alt="picture" /></p>
+
+<p>The server allows the user to decrypt the ciphertext, but only returns the md5 of the plaintext. Oops!</p>
+
+<p>Looks secure in the first place since a hash is a one-way function and it becomes such a long task to find a preimage. But when we look at the function for removing the padding after decryption:</p>
+
+<pre><code class="language-python">unpad = lambda inp: inp[:-ord(inp[-1])]
+</code></pre>
+
+<p>Strange, isn’t it? No validation, no checks if the last character is really less than or equal to 16 or if it really satisfies PKCS#7 padding criteria? Totally vulnerable to Byte-at-a-time decryption!</p>
+
+<p>We can flip last byte of second last block of ciphertext to make last byte of the plaintext equal to chr(len(<code>plaintext</code>)-1), so when the server decrypts it, it straight away removes all the characters in the plaintext other than the first character and returns the md5 hash of this character. We can now brute force the value returned by checking if it matches with the md5 hash of a printable character, if yes then that character is first character of the flag.</p>
+
+<p>For the next character, flip last byte of second last block of ciphertext to make last byte of the plaintext equal to chr(len(plaintext)-2), so the server will now return the md5 hash of the first two characters of the plaintext, we have the first byte of plaintext from above, we just have to brute the second byte like we did above.</p>
+
+<p>Do the same to get all characters of the plaintext.</p>
+
+<p>Let’s see how we can implement this exploit:</p>
+
+<ol>
+<li><p>Given the ciphertext containing the flag and “send_modflag_enc” prepended in the beginning (Since we have bypassed level-1, remember we had to brute force until insertion_position became 0? ), we have to add two more blocks of ciphertext ie. 32 bytes: 15*”a” + x + 16*”a”, x is the value we are going to brute force. We are adding two more random blocks to the ciphertext to be decrypted so that our Bit Flipping does not affect the original plaintext string (Remember CBC mode?)</p></li>
+
+<li><p>We need to know the last byte of the plaintext who ciphertext is the payload that we will send, only then we will be able to flip it to the desired value. Note that we will have to do it only once for a session. I wrote the following script to implement this:</p>
+
+<pre><code class="language-python">for i in range(len(flag)+1, 16):
+last_ptchar = ''
+if i == 1:
+    for j in range(256):
+        _ciphertext = init_vector + ciphertext
+        _payload = _ciphertext + &quot;a&quot;*15 + chr(ord(&quot;a&quot;) ^ (len(ct)+32-i) ^ j) + &quot;a&quot;*16
+        _payload = _payload.encode(&quot;base64&quot;).replace(&quot;\n&quot;,&quot;&quot;)
+        print &quot;Sending payload: &quot;, _payload
+
+        assert len(_payload.decode(&quot;base64&quot;)) % 16 == 0
+        assert len(_payload) &lt;= inp_size_limit
+
+        r.sendline(_payload)
+        hash1 = r.recvline()
+        hash1 = hash1.replace(&quot;\n&quot;,&quot;&quot;)
+
+        print &quot;Hash: &quot;, hash1
+        print &quot;Hash of s: &quot;, hashlib.md5(&quot;s&quot;).digest().encode(&quot;base64&quot;).replace(&quot;\n&quot;,&quot;&quot;)
+        print &quot;\n \n&quot;
+
+        if hash1 == hashlib.md5(&quot;s&quot;).digest().encode(&quot;base64&quot;).replace(&quot;\n&quot;,&quot;&quot;):
+            last_ptchar += chr(j)
+            print &quot;Last character of plaintext: &quot;, chr(j).encode(&quot;hex&quot;)
+            break
+        counter += 1
+</code></pre></li>
+
+<li><p>Now that we have our last character, we flip the last byte of second last block of our payload (&lsquo;x&rsquo;) such that x = x xor (len(ct)+32-1) xor last_ptchar. Get the hash output from the server, check md5 hash of which character matches with the hash output. Repeat the same thing to get all the bytes of the plaintext.</p></li>
+</ol>
+
+<p>Here is the entire exploit script. Note that I had to run this script multiple times, updating the value of flag in each run with the value I got in the previous run. This is because the server allows only 500 requests per session.</p>
+
+<pre><code class="language-python">from pwn import *
+import IPython
+import string
+import hashlib
+
+printables = string.uppercase + string.lowercase + string.digits
+
+def xor(s1,s2):
+    return &quot;&quot;.join(chr(ord(a)^ord(b)) for a,b in zip(s1,s2))
+
+fl = 0
+
+while fl == 0:
+    r = remote(&quot;chal1.swampctf.com&quot;,&quot;1460&quot;)
+    ct = r.recvline()
+    ct = ct.replace(&quot;\n&quot;,&quot;&quot;)
+    ct = ct.decode(&quot;base64&quot;)
+
+    r.recvline()
+
+    init_vector = ct[:16]
+    ciphertext = ct[16:]
+
+    res = xor(&quot;get_modflag_md5\x00&quot;,&quot;send_modflag_enc&quot;)
+    assert xor(res, &quot;send_modflag_enc&quot;) == &quot;get_modflag_md5\x00&quot;
+
+    # CBC Bit Flipping Attack
+    iv = xor(xor(&quot;get_modflag_md5\x00&quot;,&quot;send_modflag_enc&quot;), init_vector)
+
+    send_string = (iv + ciphertext).encode(&quot;base64&quot;).replace(&quot;\n&quot;,&quot;&quot;)
+    print &quot;Sending string: &quot;, send_string
+
+    r.sendline(send_string)
+    recvline1 = r.recvline()
+    print recvline1.strip(&quot;\n&quot;)
+    if recvline1[:21] == &quot;Dungeon goes deeper..&quot;:
+        fl = 1
+        break
+    r.close()
+
+# Script stops as soon as the counter reaches 500
+# 500 is the server request limit
+counter = 0
+inp_size_limit = int(len(ct.encode(&quot;base64&quot;))*4/3) + 50
+print &quot;[*] Brute Force Worked, now onto the exploit&quot;
+print &quot;Input string limit: &quot;, inp_size_limit
+
+flag = &quot;&quot;
+
+# Original Ciphertext: ciphertext
+# Original IV: init_vector
+last_ptchar = ''
+for i in range(len(flag)+1, 16):
+    if i == 1:
+        for j in range(256):
+            _ciphertext = init_vector + ciphertext
+            _payload = _ciphertext + &quot;a&quot;*15 + chr(ord(&quot;a&quot;) ^ (len(ct)+32-i) ^ j) + &quot;a&quot;*16
+            _payload = _payload.encode(&quot;base64&quot;).replace(&quot;\n&quot;,&quot;&quot;)
+            print &quot;Sending payload: &quot;, _payload
+
+            assert len(_payload.decode(&quot;base64&quot;)) % 16 == 0
+            assert len(_payload) &lt;= inp_size_limit
+
+            r.sendline(_payload)
+            hash1 = r.recvline()
+            hash1 = hash1.replace(&quot;\n&quot;,&quot;&quot;)
+
+            print &quot;Hash: &quot;, hash1
+            print &quot;Hash of s: &quot;, hashlib.md5(&quot;s&quot;).digest().encode(&quot;base64&quot;).replace(&quot;\n&quot;,&quot;&quot;)
+            print &quot;\n \n&quot;
+
+            if hash1 == hashlib.md5(&quot;s&quot;).digest().encode(&quot;base64&quot;).replace(&quot;\n&quot;,&quot;&quot;):
+                print &quot;Gotit!&quot;
+                last_ptchar = chr(j)
+                print &quot;Last character of plaintext: &quot;, chr(j).encode(&quot;hex&quot;)
+                # We already know that the first 16 characters of the plaintext is &quot;send_modflag_enc&quot;
+                flag += &quot;s&quot;
+                break
+            counter += 1
+    else:
+        print &quot;Counter: &quot;, counter
+        _ciphertext = init_vector + ciphertext
+        _payload = _ciphertext + &quot;a&quot;*15 + chr(ord(&quot;a&quot;) ^ (len(ct)+32-i) ^ last_ptchar) + &quot;a&quot;*16
+        _payload = _payload.encode(&quot;base64&quot;).replace(&quot;\n&quot;,&quot;&quot;)
+        print &quot;Sending payload: &quot;, _payload
+
+        assert len(_payload.decode(&quot;base64&quot;)) % 16 == 0
+        assert len(_payload) &lt;= inp_size_limit
+
+        r.sendline(_payload)
+        hash1 = r.recvline()
+        hash1 = hash1.replace(&quot;\n&quot;,&quot;&quot;)
+
+        for j in printables:
+            if hash1 == hashlib.md5(flag + j).digest().encode(&quot;base64&quot;).replace(&quot;\n&quot;,&quot;&quot;):
+                flag += j
+                break
+</code></pre>
+
+<p>Note that we took advantage of the fact that the first 16 characters of the plaintext are &ldquo;send_modflag_enc&rdquo;.</p>
+
+<p>This will give us the flag: <strong>flag{Ev3n_dunge0ns_are_un5af3_wIth_vu1n_padding}</strong></p>
+
+</main>
+
+    <footer>
+      
+<script>
+(function() {
+  function center_el(tagName) {
+    var tags = document.getElementsByTagName(tagName), i, tag;
+    for (i = 0; i < tags.length; i++) {
+      tag = tags[i];
+      var parent = tag.parentElement;
+      
+      if (parent.childNodes.length === 1) {
+        
+        if (parent.nodeName === 'A') {
+          parent = parent.parentElement;
+          if (parent.childNodes.length != 1) continue;
+        }
+        if (parent.nodeName === 'P') parent.style.textAlign = 'center';
+      }
+    }
+  }
+  var tagNames = ['img', 'embed', 'object'];
+  for (var i = 0; i < tagNames.length; i++) {
+    center_el(tagNames[i]);
+  }
+})();
+</script>
+
+      
+      <hr/>
+      <a href="https://www.linkedin.com/in/ashutosh1206/"><img src='/linkedin.svg' style='max-width:3%' alt='LinkedIn account' /></a> <a href="https://twitter.com/ashutosha_"><img src='/twitter.svg' style='max-width:3%' alt='Twitter handle' /></a> <a href="https://github.com/ashutosh1206"><img src='/github.svg' style='max-width:3%' alt='GitHub account' /></a>
+      
+    </footer>
+  </body>
+</html>
+

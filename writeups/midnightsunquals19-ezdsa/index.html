@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>EZDSA - Midnight Sun CTF Quals | Ashutosh</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="https://ashutosh1206.github.io/css/theme-override.css">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.css" integrity="sha384-D+9gmBxUQogRLqvARvNLmA9hS2x//eK1FhVb9PiU86gmcrBrJAQT8okdJ4LMp2uv" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.js" integrity="sha384-483A6DwYfKeDa0Q52fJmxFXkcPCFfnXMoXblOkJ4JcA8zATN6Tm78UNL72AKk+0O" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/contrib/auto-render.min.js" integrity="sha384-yACMu8JWxKzSp/C1YV86pzGiQ/l1YUfE8oPuahJQxzehAjEt2GiQuy/BIvl9KyeF" crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body);
+        });
+    </script>
+
+<header>
+
+  
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <nav>
+    <ul>
+      
+      
+      <li class="pull-left ">
+        <a href="https://ashutosh1206.github.io">/home/ashutosh</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/post/">Blog</a>
+      </li>
+      
+      
+      <li class="pull-left current">
+        <a href="/writeups/">Writeups</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/talks/">Talks</a>
+      </li>
+      
+
+      
+      
+      <li class="pull-right">
+        <a href="/categories/">~/categories</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/tags/">~/tags</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/index.xml">~/subscribe</a>
+      </li>
+      
+
+    </ul>
+  </nav>
+</header>
+
+    
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-157739046-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+  </head>
+
+  <body>
+    <br/>
+
+<div class="article-meta">
+<h1><span class="title">EZDSA - Midnight Sun CTF Quals</span></h1>
+<h2 class="author">Ashutosh Ahelleya</h2>
+<h2 class="date">2019/04/09</h2>
+<p class="terms">
+  
+  
+  Categories: <a href="/categories/crypto">Crypto</a> 
+  
+  
+  
+  Tags: <a href="/tags/numbertheory">NumberTheory</a> 
+  
+  
+</p>
+</div>
+
+
+
+<main>
+
+
+<p><strong>Challenge Points</strong>: 223<br />
+<strong>Challenge Description</strong>:</p>
+
+<blockquote>
+<p>Someone told me not to use DSA, so I came up with this.</p>
+</blockquote>
+
+<p>In this challenge, we are given a script that signs any message given as an input:</p>
+
+<pre><code class="language-python">class PrivateSigningKey:
+
+    def __init__(self):
+        self.gen = 0x44120dc98545c6d3d81bfc7898983e7b7f6ac8e08d3943af0be7f5d52264abb3775a905e003151ed0631376165b65c8ef72d0b6880da7e4b5e7b833377bb50fde65846426a5bfdc182673b6b2504ebfe0d6bca36338b3a3be334689c1afb17869baeb2b0380351b61555df31f0cda3445bba4023be72a494588d640a9da7bd16L
+        self.q = 0x926c99d24bd4d5b47adb75bd9933de8be5932f4bL
+        self.p = 0x80000000000001cda6f403d8a752a4e7976173ebfcd2acf69a29f4bada1ca3178b56131c2c1f00cf7875a2e7c497b10fea66b26436e40b7b73952081319e26603810a558f871d6d256fddbec5933b77fa7d1d0d75267dcae1f24ea7cc57b3a30f8ea09310772440f016c13e08b56b1196a687d6a5e5de864068f3fd936a361c5L
+        self.key = int(FLAG.encode(&quot;hex&quot;), 16)
+
+    def sign(self, m):
+
+        def bytes_to_long(b):
+            return long(b.encode(&quot;hex&quot;), 16)
+
+        h = bytes_to_long(sha1(m).digest())
+        u = bytes_to_long(Random.new().read(20))
+        assert(bytes_to_long(m) % (self.q - 1) != 0)
+
+        k = pow(self.gen, u * bytes_to_long(m), self.q)
+        r = pow(self.gen, k, self.p) % self.q
+        s = pow(k, self.q - 2, self.q) * (h + self.key * r) % self.q
+        assert(s != 0)
+
+        return r, s
+</code></pre>
+
+<p>We will use the notation below to represent the following variables:</p>
+
+<pre><code>`m`: integer representation of message input given to the server for signing  
+`h`: integer representation of SHA-1 of a message `m`  
+`u`: integer representation of a 20 byte randomly generated string in every session  
+`key`: integer representation of the flag   
+`g`: base element of the group; alias `gen`
+</code></pre>
+
+<p>The signature is similar to ElGamal signature, but works as follows:<br />
+\( k = g^{u\;*\;m}\;\%\;q \)</p>
+
+<p>\( r = (g^{k}\;\%\;p)\;\%\;q \)</p>
+
+<p>\( s = ((k^{q-2}\;\%\;q)*(h+(key*r)))\;\%\;q \)</p>
+
+<p>Server returns <code>(r, s)</code> pair for any \(m\) given as input (with one exception that we will see later in the post)</p>
+
+<p>Our <strong>motive</strong> is to recover the value of <code>key</code>, since it is the integer representation of the flag!</p>
+
+<h2 id="setting-a-tentative-target">Setting a tentative target</h2>
+
+<p>If by giving some input, <code>k</code> becomes equal to 1, then recovering <code>key</code> becomes very easy:<br />
+\(s = ((k^{(q-2)}\;\%\;q)*(h+(key*r)))\;\%\;q \)<br />
+\(s = ((1^{(q-2)}\;\%\;q)*(h+(key*r)))\;\%\;q \)<br />
+\(s = (h+(key*r))\;\%\;q\)<br />
+\((s-h)*r^{-1}\equiv key \mod q \)</p>
+
+<p>We know the values of <code>h</code>, <code>r</code> and <code>s</code>, hence <code>key</code> can be calculated using the above formula,
+on one <strong>condition</strong> that <code>k</code> becomes equal to 1</p>
+
+<p>The question now is: <strong>how</strong> do we make the value of <code>k</code> equal to 1?</p>
+
+<h2 id="finding-input-such-that-k-1">Finding input such that k=1</h2>
+
+<p>We now need to find an input message <code>m</code> such that
+\(k = g^{u\;*\;m}\;\%\;q = 1\)</p>
+
+<h3 id="trivial-approach">Trivial Approach</h3>
+
+<p>The easiest approach is to send <code>q-1</code> as <code>m</code>. This is because<br />
+\(k = g^{u\;*\;m}\;\%\;q\)<br />
+\(k = g^{u\;*\;(q-1)}\;\%\;q\)<br />
+\(k = (g^{(q-1)}\;\%\;q)^{u}\;\%\;q\)<br />
+\(k = 1^u\;\%\;q\)<br />
+\(k = 1\)</p>
+
+<p>The above set of equations is a direct consequence of Fermat&rsquo;s Little Theorem:</p>
+
+<blockquote>
+<p>if GCD(a, p) == 1 then:<br />
+\(a^{(p-1)}\equiv 1 \mod p\)</p>
+</blockquote>
+
+<p>But there is a <strong>problem</strong>. If we look at an assert statement in the function that signs our message:</p>
+
+<pre><code class="language-python">assert(bytes_to_long(m) % (self.q - 1) != 0)
+</code></pre>
+
+<p>The above statement means that our message cannot be a multiple of q-1, hence we cannot send <code>q-1</code> as <code>m</code>.</p>
+
+<h3 id="applying-euler-s-criterion">Applying Euler&rsquo;s Criterion</h3>
+
+<p><strong>Case-1</strong>: <code>u</code> is an even number
+In such a case, we can send <code>m = (q-1)/2</code> and get the following:<br />
+\(k = g^{u\;*\;m}\;\%\;q \)<br />
+\(k = g^{u&rsquo;\;*\;2\;*\;m}\;\%\;q \)<br />
+\(k = g^{u&rsquo;\;*\;2\;*\;((q-1)/2)}\;\%\;q \)<br />
+\(k = (g^{(q-1)}\;\%\;q)^{u&rsquo;}\;\%\;q \)<br />
+\(k = 1\;\%\;q = 1 \)</p>
+
+<p><strong>Case-2</strong>: <code>u</code> is an odd number, we send <code>m = (q-1)/2</code> and get the following:<br />
+\(k = g^{u\;*\;m}\;\%\;q\)<br />
+\(k = g^{u\;*\;((q-1)/2)}\;\%\;q\)<br />
+\(k = (g^{((q-1)/2)}\;\%\;q)^{u}\;\%\;q\)</p>
+
+<p>From <a href="https://en.wikipedia.org/wiki/Euler%27s_criterion">Euler&rsquo;s Criterion</a>, we have:</p>
+
+<blockquote>
+<p>If GCD(a, p) == 1<br />
+$$a^{(p-1)/2}\equiv \begin{cases} 1\;(mod\;p),\exists x\mid x^2\equiv a\mod p\\ -1\;(mod\;p), otherwise \end{cases}$$</p>
+</blockquote>
+
+<p>There are equal number of quadratic residues and quadratic non-residues in a group over a prime number. A proof of this is illustrated in Wikipedia:
+<img src="/midnightsunquals19-ezdsa-1.png" alt="picture" />
+<strong>Source</strong>: <em><a href="https://en.wikipedia.org/wiki/Euler%27s_criterion">Euler&rsquo;s Criterion proof - Wikipedia</a></em></p>
+
+<p>This basically means that no matter what, if <code>m = (q-1)/2</code>, value of <code>k</code> will be either <code>1</code> or <code>-1</code>. So, we sent <code>m = (q-1)/2</code> to the server, and got <code>r = g % q</code>. This straightaway implies that <code>k</code> turned out to be equal to 1.</p>
+
+<p><code>key</code> can then be simply calculated as:
+$$ (s-h)*r^{-1}\equiv key \mod p $$</p>
+
+<pre><code class="language-python">from Crypto.Util.number import *
+h = 1317885328399162707374481214163502540222211181040L
+q = 0x926c99d24bd4d5b47adb75bd9933de8be5932f4bL
+# r, s values we got from the server after sending m = (q-1)/2
+r = 698847418084580852997663919979623019513778951409L
+s = 629758878500372559472644038362239654961033814558L
+print long_to_bytes((s - h)*inverse(r, q) % q)
+</code></pre>
+
+<p>Flag: <strong>th4t_w4s_e4sy_eh?</strong></p>
+
+</main>
+
+    <footer>
+      
+<script>
+(function() {
+  function center_el(tagName) {
+    var tags = document.getElementsByTagName(tagName), i, tag;
+    for (i = 0; i < tags.length; i++) {
+      tag = tags[i];
+      var parent = tag.parentElement;
+      
+      if (parent.childNodes.length === 1) {
+        
+        if (parent.nodeName === 'A') {
+          parent = parent.parentElement;
+          if (parent.childNodes.length != 1) continue;
+        }
+        if (parent.nodeName === 'P') parent.style.textAlign = 'center';
+      }
+    }
+  }
+  var tagNames = ['img', 'embed', 'object'];
+  for (var i = 0; i < tagNames.length; i++) {
+    center_el(tagNames[i]);
+  }
+})();
+</script>
+
+      
+      <hr/>
+      <a href="https://www.linkedin.com/in/ashutosh1206/"><img src='/linkedin.svg' style='max-width:3%' alt='LinkedIn account' /></a> <a href="https://twitter.com/ashutosha_"><img src='/twitter.svg' style='max-width:3%' alt='Twitter handle' /></a> <a href="https://github.com/ashutosh1206"><img src='/github.svg' style='max-width:3%' alt='GitHub account' /></a>
+      
+    </footer>
+  </body>
+</html>
+

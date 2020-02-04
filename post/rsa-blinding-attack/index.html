@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Blinding Attack on RSA Signatures | Ashutosh</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="https://ashutosh1206.github.io/css/theme-override.css">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.css" integrity="sha384-D+9gmBxUQogRLqvARvNLmA9hS2x//eK1FhVb9PiU86gmcrBrJAQT8okdJ4LMp2uv" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.js" integrity="sha384-483A6DwYfKeDa0Q52fJmxFXkcPCFfnXMoXblOkJ4JcA8zATN6Tm78UNL72AKk+0O" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/contrib/auto-render.min.js" integrity="sha384-yACMu8JWxKzSp/C1YV86pzGiQ/l1YUfE8oPuahJQxzehAjEt2GiQuy/BIvl9KyeF" crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body);
+        });
+    </script>
+
+<header>
+
+  
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <nav>
+    <ul>
+      
+      
+      <li class="pull-left ">
+        <a href="https://ashutosh1206.github.io">/home/ashutosh</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/post/">Blog</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/writeups/">Writeups</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/talks/">Talks</a>
+      </li>
+      
+
+      
+      
+      <li class="pull-right">
+        <a href="/categories/">~/categories</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/tags/">~/tags</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/index.xml">~/subscribe</a>
+      </li>
+      
+
+    </ul>
+  </nav>
+</header>
+
+    
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-157739046-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+  </head>
+
+  <body>
+    <br/>
+
+<div class="article-meta">
+<h1><span class="title">Blinding Attack on RSA Signatures</span></h1>
+<h2 class="author">Ashutosh Ahelleya</h2>
+<h2 class="date">2017/07/10</h2>
+<p class="terms">
+  
+  
+  Categories: <a href="/categories/crypto">Crypto</a> 
+  
+  
+  
+  Tags: <a href="/tags/blinding-attack">Blinding-Attack</a> 
+  
+  
+</p>
+</div>
+
+
+
+<main>
+
+
+<p>This blog primarily focuses on Blinding Attack- an elementary vulnerability in unpadded RSA digital signature algorithm that can be exploited to forge signatures. The working and properties of Digital Signatures will be described before directly jumping onto the attack. In the end, we discuss ways to prevent this attack.</p>
+
+<h2 id="unpadded-digital-signatures-using-rsa">Unpadded Digital Signatures using RSA</h2>
+
+<p>RSA is a kind of <strong>Trapdoor One-way Function</strong>. Wikipedia describes a one-way function as a function that is easy to compute on every input, but hard to invert given the image of a random input. Here, “easy” and “hard” are to be understood in the sense of computational complexity theory, specifically the theory of polynomial time problems.</p>
+
+<p>A trapdoor one-way function can only be inverted with the help of a <strong>trapdoor</strong> i.e. our \(d\), the private key in <a href="https://en.wikipedia.org/wiki/Public-key_cryptography">public key cryptosystems</a>.</p>
+
+<p>Let \(N\) be the public modulus, \(e\) be the public key exponent and \(d\) be the private key exponent.</p>
+
+<p>The relation between the three is as follows:
+$$ed\equiv 1\mod \phi(n)$$</p>
+
+<p>Let Alice and Bob be two generic parties wishing to communicate with each other and Marvin be the eavesdropper, trying to tamper the data transfer between the two parties.</p>
+
+<p>The scenario here is as follows: Alice is trying to get Bob&rsquo;s signature on a message \(M \in Z^*_N\). To get a signature, Alice sends the message \(M\) where Bob signs the message \(M\) as follows:
+$$S\equiv M^d\mod N$$</p>
+
+<p>Here, \(S\) is the signature of the message \(M\).</p>
+
+<p>In the above step, Bob applies his private key to the message and obtains a signature \(S\). Bob then sends this \(S\) to Alice or any other authentic party which needs the signature of Bob on \(M\). Since public key of Bob, as the name suggests, is known to the parties, the signature can be easily verified if it is generated from Bob or not by simply calculating:
+$$S^e\equiv M\mod N$$</p>
+
+<p>Only Bob has his private key and so the parties can conclude that the signature is authenticate and legible. In the next section, we will discuss some vulnerabilities in the above algorithm.</p>
+
+<h2 id="blinding-attack">Blinding Attack</h2>
+
+<p>Consider the same scenario here, except for the fact that this time Marvin wants the Bob&rsquo;s signature on a message \(M\) which Bob refuses. So instead of the signature on \(M\), Marvin asks for Bob&rsquo;s signature on “innocent looking” \(M’\) which he calculates as following:
+$$M&rsquo; = r^eM\mod N$$</p>
+
+<p>Here \(r\) in the above equation is any arbitrary positive integer in the same interval as \(M\).</p>
+
+<p>Bob agrees to sign this message \(M’\). Let \(S’\) be the signature generated in case of \(M’\). We can write \(S’\) as:
+$$S&rsquo;\equiv (M&rsquo;)^d\mod N$$</p>
+
+<p>Upon receiving the signature of this message \(M&rsquo;\), signature of message \(M\) can be easily forged by computing: \(S\equiv S&rsquo;r^{-1}\mod N\)</p>
+
+<p>Why does the above equation hold true? Let us see how:<br />
+$$S&rsquo; \equiv (M&rsquo;)^d\mod N$$
+$$S&rsquo; \equiv (r^eM)^d\mod N$$
+$$S&rsquo; \equiv rM^d\mod N$$</p>
+
+<p>Multiplying both sides of the above equation with \(r^{-1}\mod N\)
+$$S&rsquo;r^{-1}\equiv rM^dr^{-1}\mod N$$
+$$S&rsquo;r^{-1}\equiv M^d\mod N$$
+$$S\equiv S&rsquo;r^{-1}\mod N$$</p>
+
+<p>So without actually getting the signature on \(M\), Marvin could successfully manipulate the signature \(S’\) to gain the signature of \(M\) i.e. \(S\). This technique allows an attacker to get signature on a message of his choice without the consent of the one who is signing it.</p>
+
+<h2 id="preventing-blinding-attack">Preventing Blinding Attack</h2>
+
+<p>The question which arises now is, what could be the possible measures to prevent such attacks?</p>
+
+<ol>
+<li><p>If the signatory signs the Hash of the message \(M\) instead of signing the message itself, all the four steps in the attack would make no sense since \(M&rsquo;\) would then be replaced by H(M’) (The hash function) and hence it cannot be divided by blinding factor to get back \(M\).</p></li>
+
+<li><p>Another advantage of using hash of the message instead of using the message is that a cryptographic hash can take an arbitrarily long message, and literally &lsquo;compress&rsquo; it into a short string, in such a way that we cannot find two messages that hash to the same value. Hence, signing the hash is just as good as signing the original message, without the length restrictions we would have if we didn’t use a hash. This overcomes the size problem in RSA operation where the key has to be very large in order to sign smaller messages!</p></li>
+</ol>
+
+<h2 id="references">References</h2>
+
+<ol>
+<li>Twenty years of Attacks on RSA: <a href="https://crypto.stanford.edu/~dabo/papers/RSA-survey.pdf">https://crypto.stanford.edu/~dabo/papers/RSA-survey.pdf</a></li>
+</ol>
+
+</main>
+
+    <footer>
+      
+<script>
+(function() {
+  function center_el(tagName) {
+    var tags = document.getElementsByTagName(tagName), i, tag;
+    for (i = 0; i < tags.length; i++) {
+      tag = tags[i];
+      var parent = tag.parentElement;
+      
+      if (parent.childNodes.length === 1) {
+        
+        if (parent.nodeName === 'A') {
+          parent = parent.parentElement;
+          if (parent.childNodes.length != 1) continue;
+        }
+        if (parent.nodeName === 'P') parent.style.textAlign = 'center';
+      }
+    }
+  }
+  var tagNames = ['img', 'embed', 'object'];
+  for (var i = 0; i < tagNames.length; i++) {
+    center_el(tagNames[i]);
+  }
+})();
+</script>
+
+      
+      <hr/>
+      <a href="https://www.linkedin.com/in/ashutosh1206/"><img src='/linkedin.svg' style='max-width:3%' alt='LinkedIn account' /></a> <a href="https://twitter.com/ashutosha_"><img src='/twitter.svg' style='max-width:3%' alt='Twitter handle' /></a> <a href="https://github.com/ashutosh1206"><img src='/github.svg' style='max-width:3%' alt='GitHub account' /></a>
+      
+    </footer>
+  </body>
+</html>
+

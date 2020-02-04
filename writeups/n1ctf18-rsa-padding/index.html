@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>RSA-Padding - N1CTF | Ashutosh</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="https://ashutosh1206.github.io/css/theme-override.css">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.css" integrity="sha384-D+9gmBxUQogRLqvARvNLmA9hS2x//eK1FhVb9PiU86gmcrBrJAQT8okdJ4LMp2uv" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.js" integrity="sha384-483A6DwYfKeDa0Q52fJmxFXkcPCFfnXMoXblOkJ4JcA8zATN6Tm78UNL72AKk+0O" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/contrib/auto-render.min.js" integrity="sha384-yACMu8JWxKzSp/C1YV86pzGiQ/l1YUfE8oPuahJQxzehAjEt2GiQuy/BIvl9KyeF" crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body);
+        });
+    </script>
+
+<header>
+
+  
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <nav>
+    <ul>
+      
+      
+      <li class="pull-left ">
+        <a href="https://ashutosh1206.github.io">/home/ashutosh</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/post/">Blog</a>
+      </li>
+      
+      
+      <li class="pull-left current">
+        <a href="/writeups/">Writeups</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/talks/">Talks</a>
+      </li>
+      
+
+      
+      
+      <li class="pull-right">
+        <a href="/categories/">~/categories</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/tags/">~/tags</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/index.xml">~/subscribe</a>
+      </li>
+      
+
+    </ul>
+  </nav>
+</header>
+
+    
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-157739046-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+  </head>
+
+  <body>
+    <br/>
+
+<div class="article-meta">
+<h1><span class="title">RSA-Padding - N1CTF</span></h1>
+<h2 class="author">Ashutosh Ahelleya</h2>
+<h2 class="date">2018/03/12</h2>
+<p class="terms">
+  
+  
+  Categories: <a href="/categories/crypto">Crypto</a> 
+  
+  
+  
+  Tags: <a href="/tags/rsa">RSA</a> <a href="/tags/numbertheory">NumberTheory</a> <a href="/tags/franklinreiter">FranklinReiter</a> 
+  
+  
+</p>
+</div>
+
+
+
+<main>
+
+
+<p><strong>Challenge Points</strong>: 303</p>
+
+<p>Challenge is running on the service: <code>nc 47.75.39.249 23333</code><br />
+After surpassing the Proof of Work, we get the following challenge:
+<img src="/n1ctf18-rsapadding1.png" alt="picture" /></p>
+
+<p>On selecting the option <strong><code>get code</code></strong>, we get the following code that is being used for encryption:</p>
+
+<pre><code class="language-python">#!/usr/bin/env python3
+# -*- coding=utf-8 -*-
+
+from Crypto.Util.number import getPrime, GCD, bytes_to_long
+from hashlib import sha256
+import random
+import signal
+import sys, os
+
+signal.alarm(20)
+
+m = b&quot;xxxxxxxxxxxxxx&quot;
+n = 21727106551797231400330796721401157037131178503238742210927927256416073956351568958100038047053002307191569558524956627892618119799679572039939819410371609015002302388267502253326720505214690802942662248282638776986759094777991439524946955458393011802700815763494042802326575866088840712980094975335414387283865492939790773300256234946983831571957038601270911425008907130353723909371646714722730577923843205527739734035515152341673364211058969041089741946974118237091455770042750971424415176552479618605177552145594339271192853653120859740022742221562438237923294609436512995857399568803043924319953346241964071252941
+e = 3
+
+def proof():
+    strings = &quot;abcdefghijklmnopqrstuvwxyzWOERFJASKL&quot;
+    prefix = &quot;&quot;.join(random.sample(strings, 6))
+    starwith = str(random.randint(10000, 99999))
+    pf = &quot;&quot;&quot;
+sha256(&quot;%s&quot;+str).hexdigest().startswith(&quot;%s&quot;) == True
+Please give me str
+&quot;&quot;&quot;%(prefix, starwith)
+    print(pf)
+    s = input().strip()
+    if sha256((prefix+s).encode()).hexdigest().startswith(starwith):
+        return True
+    else:
+        return False
+
+def cmd():
+    help = &quot;&quot;&quot;
+1. get code
+2. get flag
+Please tell me, what you want?
+&quot;&quot;&quot;
+    while True:
+        print(help)
+        c = input().strip()
+        if c == &quot;1&quot;:
+            return True
+        elif c == &quot;2&quot;:
+            return False
+        else:
+            print(&quot;Enter Error!&quot;)
+
+def main():
+    if not proof():
+        print(&quot;Check Failed!&quot;)
+        return
+    welcom()
+    if cmd():
+        f = open(&quot;file.py&quot;)
+        print(f.read())
+        return
+    mm = bytes_to_long(m)
+    assert pow(mm, e) != pow(mm, e, n)
+    sys.stdout.write(&quot;Please give me a padding: &quot;)
+    padding = input().strip()
+    padding = int(sha256(padding.encode()).hexdigest(),16)
+    c = pow(mm+padding, e, n)
+    print(&quot;Your Ciphertext is: %s&quot;%c)
+
+if __name__ == '__main__':
+    main()
+</code></pre>
+
+<p>Upon selecting the <strong><code>get flag</code></strong> option, the following computation is done:<br />
+$$c \equiv (flag + sha256(input))^3\mod n$$
+where <code>input</code> is an input string that we give to the server, sha256() is a function that generates integer representation of SHA-256 hash of the <code>input</code> and <code>c</code> is the corresponding ciphertext.</p>
+
+<p>Server then returns <code>c</code> as the output. One important thing to note here is that \(m^3 &gt; n\), hence we cannot directly calculate cube root of the ciphertext.</p>
+
+<p>Public key values:</p>
+
+<pre><code class="language-python">n = 21727106551797231400330796721401157037131178503238742210927927256416073956351568958100038047053002307191569558524956627892618119799679572039939819410371609015002302388267502253326720505214690802942662248282638776986759094777991439524946955458393011802700815763494042802326575866088840712980094975335414387283865492939790773300256234946983831571957038601270911425008907130353723909371646714722730577923843205527739734035515152341673364211058969041089741946974118237091455770042750971424415176552479618605177552145594339271192853653120859740022742221562438237923294609436512995857399568803043924319953346241964071252941
+e = 3
+</code></pre>
+
+<h2 id="vulnerability">Vulnerability</h2>
+
+<p>Allowing user controlled padding exposes the challenge to <a href="https://github.com/ashutosh1206/Crypton/blob/master/RSA-encryption/Attack-Franklin-Reiter/README.md">Franklin-Reiter&rsquo;s related message attack</a>.</p>
+
+<p>I found an easier way to solve this challenge using very basic Algebra and Number Theory concepts, as compared to the attack described in the above hyperlink.</p>
+
+<p>First, we send <code>2</code> as an input to the server and get corresponding ciphertext:</p>
+
+<pre><code class="language-python">c1 = 14550589053226237723784378782911157204367764723816957959635387925652898370034365455451983914571405062459535687617841302966938233065296973978472553109061974458935966754832788411876301179210585984208608247433383774246743661884093657109502619626436726032508763685599880808525861655167503719155953736308920858354069083437923495143680174206534169208623366776314544036377265501358254923029291010047210371394197963442022610746743020719292018028518885149189744832788117626194748311114409968846879212425054195323473068436359069318372735069308398135560733890706617536127579272964863500568572120716434126233695562326533941909353
+</code></pre>
+
+<p>Next, we send <code>1</code> as an input to the server and get corresponding ciphertext:</p>
+
+<pre><code class="language-python">c2 = 14550589053226237723784378782911157204367764723813789158271625147472004207734354619642445255036997940341703539883653916130592718879734436263217819317202435434496341973502556894834798718992952369685841347018901038478081710519253844078907000973324354805502890255414196801758171762906898874914776720897920729518384393581853690034053515213192846817920534901501370942556249012415259244063185938984570137371682805276444650716010228924732495062415330875872004691866847132147232457398743319930259327973290858489741376000333603734294893832124907092640953321640151851853501528390729805151850605432707293088635480863375398001441
+</code></pre>
+
+<p>For <code>c1</code> and <code>c2</code> we can write the following:</p>
+
+<pre><code class="language-python">h1 = int(sha256('2').hexdigest(), 16)
+h2 = int(sha256('1').hexdigest(), 16)
+</code></pre>
+
+<p>\(c_1\equiv (m+h_1)^3\mod n\) &ndash;&gt; <strong>(1)</strong><br />
+\(c_2\equiv (m+h_2)^3\mod n\) &ndash;&gt; <strong>(2)</strong></p>
+
+<p>where <code>m</code> is the flag that we want to calculate!</p>
+
+<p>On expanding (1) we get:<br />
+\(\implies c_1 \equiv m^3 + h_1^3 + 3m^2h_1 + 3mh_1^2\mod n\) &ndash;&gt; <strong>(3)</strong><br />
+Similarly, on expanding (2) we get:<br />
+\(\implies c_2 \equiv m^3 + h_2^3 + 3m^2h_2 + 3mh_2^2\mod n\) &ndash;&gt; <strong>(4)</strong></p>
+
+<p>Subtracting (4) from (3), we get:<br />
+$$c_1 - c_2 \equiv (h_1-h_2)(h_1^2 + h_1h_2 + h_2^2) + 3m^2(h_1 - h_2) + 3m(h_1 + h_2)(h_1 - h_2)\mod n$$
+$$\frac{c_1 - c_2}{h_1 - h_2}\equiv (h_1^2 + h_1h_2 + h_2^2) + 3m^2 + 3m(h_1 + h_2) \mod n$$</p>
+
+<p>If we substitute \(x = \frac{c_1 - c_2}{h_1 - h_2}\), we get:
+$$3m^2 + 3m(h_1 + h_2) + (h_1^2 + h_1h_2 + h_2^2 - x)\equiv 0\mod n$$
+The above equation is quadratic, we also know the values of \(h_1\) &amp; \(h_2\).</p>
+
+<p>According to the quadratic formula, we have:
+$$m \equiv \frac{-b\;\pm\;\sqrt{b^2-4ac}}{2a}\mod n$$
+Hence, we can calculate <code>m</code> as:
+$$m \equiv \frac{-3(h_1+h_2)\;\pm\;\sqrt{(3(h_1+h_2))^2-12(h_1^2 + h_1h_2 + h_2^2 - x)}}{6}\mod n$$</p>
+
+<p>Wrote the following script to implement the attack:</p>
+
+<pre><code class="language-python">import hashlib
+import gmpy2
+from Crypto.Util.number import *
+
+hash1 = int(hashlib.sha256('2').hexdigest(), 16)
+hash2 = int(hashlib.sha256('1').hexdigest(), 16)
+diff = hash1 - hash2
+print &quot;diff: &quot;, diff
+
+# M1 = M2 + diff
+n = 21727106551797231400330796721401157037131178503238742210927927256416073956351568958100038047053002307191569558524956627892618119799679572039939819410371609015002302388267502253326720505214690802942662248282638776986759094777991439524946955458393011802700815763494042802326575866088840712980094975335414387283865492939790773300256234946983831571957038601270911425008907130353723909371646714722730577923843205527739734035515152341673364211058969041089741946974118237091455770042750971424415176552479618605177552145594339271192853653120859740022742221562438237923294609436512995857399568803043924319953346241964071252941L
+e = 3
+
+c1 = 14550589053226237723784378782911157204367764723816957959635387925652898370034365455451983914571405062459535687617841302966938233065296973978472553109061974458935966754832788411876301179210585984208608247433383774246743661884093657109502619626436726032508763685599880808525861655167503719155953736308920858354069083437923495143680174206534169208623366776314544036377265501358254923029291010047210371394197963442022610746743020719292018028518885149189744832788117626194748311114409968846879212425054195323473068436359069318372735069308398135560733890706617536127579272964863500568572120716434126233695562326533941909353
+c2 = 14550589053226237723784378782911157204367764723813789158271625147472004207734354619642445255036997940341703539883653916130592718879734436263217819317202435434496341973502556894834798718992952369685841347018901038478081710519253844078907000973324354805502890255414196801758171762906898874914776720897920729518384393581853690034053515213192846817920534901501370942556249012415259244063185938984570137371682805276444650716010228924732495062415330875872004691866847132147232457398743319930259327973290858489741376000333603734294893832124907092640953321640151851853501528390729805151850605432707293088635480863375398001441
+assert c2 &lt; n
+assert c1 &lt; n
+assert c1 &gt; c2
+res = (c1 - c2) / (hash1 - hash2)
+
+a = 3
+b = 3*(hash1 + hash2)
+c = (hash1**2 + hash1*hash2 + hash2**2) - res
+assert b**2 - 4*a*c &gt;= 0
+
+det = gmpy2.iroot(b**2 - 4*a*c, 2)
+#Result of the above operation
+det = 895117860555194221639962847152553327251877885494596369020458400464169641215830527612022789636620223733091925404109820014339798528983673228478908782900199621057014409705139235003835944181120537080102658020544028036693589036615231884111568905196654L
+sol1 = (det - b)/(2*a)
+print long_to_bytes(sol1)
+</code></pre>
+
+<p><strong>Flag</strong>: N1CTF{f7efbf4e5f5ef78ca1fb9c8f5eb02635}</p>
+
+</main>
+
+    <footer>
+      
+<script>
+(function() {
+  function center_el(tagName) {
+    var tags = document.getElementsByTagName(tagName), i, tag;
+    for (i = 0; i < tags.length; i++) {
+      tag = tags[i];
+      var parent = tag.parentElement;
+      
+      if (parent.childNodes.length === 1) {
+        
+        if (parent.nodeName === 'A') {
+          parent = parent.parentElement;
+          if (parent.childNodes.length != 1) continue;
+        }
+        if (parent.nodeName === 'P') parent.style.textAlign = 'center';
+      }
+    }
+  }
+  var tagNames = ['img', 'embed', 'object'];
+  for (var i = 0; i < tagNames.length; i++) {
+    center_el(tagNames[i]);
+  }
+})();
+</script>
+
+      
+      <hr/>
+      <a href="https://www.linkedin.com/in/ashutosh1206/"><img src='/linkedin.svg' style='max-width:3%' alt='LinkedIn account' /></a> <a href="https://twitter.com/ashutosha_"><img src='/twitter.svg' style='max-width:3%' alt='Twitter handle' /></a> <a href="https://github.com/ashutosh1206"><img src='/github.svg' style='max-width:3%' alt='GitHub account' /></a>
+      
+    </footer>
+  </body>
+</html>
+

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Multi Layer RSA - InCTFi 2017 | Ashutosh</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="https://ashutosh1206.github.io/css/theme-override.css">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.css" integrity="sha384-D+9gmBxUQogRLqvARvNLmA9hS2x//eK1FhVb9PiU86gmcrBrJAQT8okdJ4LMp2uv" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.js" integrity="sha384-483A6DwYfKeDa0Q52fJmxFXkcPCFfnXMoXblOkJ4JcA8zATN6Tm78UNL72AKk+0O" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/contrib/auto-render.min.js" integrity="sha384-yACMu8JWxKzSp/C1YV86pzGiQ/l1YUfE8oPuahJQxzehAjEt2GiQuy/BIvl9KyeF" crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body);
+        });
+    </script>
+
+<header>
+
+  
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <nav>
+    <ul>
+      
+      
+      <li class="pull-left ">
+        <a href="https://ashutosh1206.github.io">/home/ashutosh</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/post/">Blog</a>
+      </li>
+      
+      
+      <li class="pull-left current">
+        <a href="/writeups/">Writeups</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/talks/">Talks</a>
+      </li>
+      
+
+      
+      
+      <li class="pull-right">
+        <a href="/categories/">~/categories</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/tags/">~/tags</a>
+      </li>
+      
+      
+      <li class="pull-right">
+        <a href="/index.xml">~/subscribe</a>
+      </li>
+      
+
+    </ul>
+  </nav>
+</header>
+
+    
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-157739046-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+  </head>
+
+  <body>
+    <br/>
+
+<div class="article-meta">
+<h1><span class="title">Multi Layer RSA - InCTFi 2017</span></h1>
+<h2 class="author">Ashutosh Ahelleya</h2>
+<h2 class="date">2017/12/18</h2>
+<p class="terms">
+  
+  
+  Categories: <a href="/categories/crypto">Crypto</a> 
+  
+  
+  
+  Tags: <a href="/tags/rsa">RSA</a> <a href="/tags/wieners-attack">Wiener&#39;s-Attack</a> 
+  
+  
+</p>
+</div>
+
+
+
+<main>
+<p><strong>Challenge Points</strong>: 100<br />
+<strong>Challenge Description</strong>: [None]</p>
+
+<p>Intended Solution</p>
+
+<p>This is probably the easiest challenge in the Crypto section for this year&rsquo;s InCTF. The encryption script:</p>
+
+<pre><code class="language-python">from Crypto.Util.number import *
+
+flag = open(&quot;flag.txt&quot;).read()
+flag = int(flag.encode(&quot;hex&quot;),16)
+
+p = getPrime(512)
+q = getPrime(512)
+n = p*q
+phin = (p-1)*(q-1)
+
+encryption_keys = [34961, 3617491, 68962801, 293200159531, 1191694878666066510321450623792489136756229172407332230462797663298426983932272792657383336660801913848162204216417540955677965706955404313949733712340714861638106185597684745174398501025724130404133569866642454996521744281284226124355987843894614599718553178595963014434904833]
+
+for i in encryption_keys:
+    assert GCD(i,phin) == 1
+
+for i in encryption_keys:
+    flag = pow(flag, i, n)
+
+flag = hex(flag)[2:].replace(&quot;L&quot;,&quot;&quot;)
+
+obj1 = open(&quot;ciphertext.txt&quot;,'w')
+obj1.write(flag)
+</code></pre>
+
+<p>As we can see, the encryption is <strong>layered</strong>; after the message is encrypted using the first public key i.e. first element of <code>encryption_keys</code>, the result is then encrypted with the next public key i.e. second element of <code>encryption_keys</code> and so on. We can write it mathematically as:
+$$c_1 \equiv m_1^{e_1}\mod n$$
+$$c_2 \equiv c_1^{e_2}\mod n$$
+$$&hellip;$$
+$$c_5 \equiv c_4^{e_5}\mod n$$</p>
+
+<p>Hence, we can write:
+$$c_5\equiv m^{e_1e_2e_3e_4e_5}\mod n$$</p>
+
+<p>Here \(e_1, e_2, &hellip;, e_5\) elements of <code>encryption_keys</code>; \(c_1, c_2, &hellip;, c_5\) are the ciphertexts in each iteration.</p>
+
+<p>The result of multiplication of \(e_1, e_2, e_3, e_4, e_5\) becomes quite large and can be checked for <a href="https://github.com/ashutosh1206/Crypton/tree/master/RSA-encryption/Attack-Wiener">Wiener’s Attack</a>.</p>
+
+<pre><code class="language-python">e = 3047442173541658754667464233797118324917469250436575767227172319344577259865313428705759330024959317716760816959590728238918140105663188172228696589411452947738069773833351725455888549656717874059636289036277785342126992626060696063089487811946920569580454880169977542532087635095357205433679009382368108273
+</code></pre>
+
+<p>The final exploit (Implementation of Wiener’s Attack in python/sage):</p>
+
+<pre><code class="language-python">from sage.all import *
+
+encryption_keys = [34961, 3617491, 68962801, 293200159531, 1191694878666066510321450623792489136756229172407332230462797663298426983932272792657383336660801913848162204216417540955677965706955404313949733712340714861638106185597684745174398501025724130404133569866642454996521744281284226124355987843894614599718553178595963014434904833]
+
+e = 1
+for i in encryption_keys:
+    e *= i
+n = 135568509670260054049994954417860747085442883428459182441559553532993752593294067458983143521109377661295622146963670193783017382697726454953197805014428888491744355387957923382241961401063461549210355871385000347645387907568135032087942016502668629010859519249039662555733548461551175133582871220209515648241
+
+c = int(&quot;5d695edb47b81a303d162611f7d407579160ef8818929031e1e13ca20cb7094eddbb0658d95980e1753182c5d5c529fb45062891bb5da573c618e35df0103233ded582a53ed807846b19ea82be427f2bbc63e5c7eb685d8a22b2b7539cf45d4ad93bbf5b892b66288b568b6bbff6bb263d809475e6f0aa3cfd01539d8364c243&quot;, 16)
+
+lst = continued_fraction(Integer(e)/Integer(n))
+conv = lst.convergents()
+for i in conv:
+    k = i.numerator()
+    d = int(i.denominator())
+    try:
+        m = hex(pow(c, d, n))[2:].replace(&quot;L&quot;,&quot;&quot;).decode(&quot;hex&quot;)
+        if &quot;inctf&quot; in m:
+            print m
+    except:
+        continue
+</code></pre>
+
+<p>Running the above script gives us the flag: <strong>inctf{w13n3r’s_4774ck_s0lv3d_17_4ll_r1gh7?}</strong></p>
+
+</main>
+
+    <footer>
+      
+<script>
+(function() {
+  function center_el(tagName) {
+    var tags = document.getElementsByTagName(tagName), i, tag;
+    for (i = 0; i < tags.length; i++) {
+      tag = tags[i];
+      var parent = tag.parentElement;
+      
+      if (parent.childNodes.length === 1) {
+        
+        if (parent.nodeName === 'A') {
+          parent = parent.parentElement;
+          if (parent.childNodes.length != 1) continue;
+        }
+        if (parent.nodeName === 'P') parent.style.textAlign = 'center';
+      }
+    }
+  }
+  var tagNames = ['img', 'embed', 'object'];
+  for (var i = 0; i < tagNames.length; i++) {
+    center_el(tagNames[i]);
+  }
+})();
+</script>
+
+      
+      <hr/>
+      <a href="https://www.linkedin.com/in/ashutosh1206/"><img src='/linkedin.svg' style='max-width:3%' alt='LinkedIn account' /></a> <a href="https://twitter.com/ashutosha_"><img src='/twitter.svg' style='max-width:3%' alt='Twitter handle' /></a> <a href="https://github.com/ashutosh1206"><img src='/github.svg' style='max-width:3%' alt='GitHub account' /></a>
+      
+    </footer>
+  </body>
+</html>
+

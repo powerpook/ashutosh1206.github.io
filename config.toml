@@ -1,0 +1,41 @@
+baseurl = "https://ashutosh1206.github.io"
+languageCode = "en-us"
+title = "Ashutosh"
+theme = "hugo-classic"
+googleAnalytics = "UA-157739046-1"
+ignoreFiles = ["\\.Rmd$", "_files$", "_cache$"]
+preserveTaxonomyNames = true
+enableEmoji = true
+footnotereturnlinkcontents = "↩"
+
+[permalinks]
+    post = "/post/:slug/"
+
+[[menu.main]]
+    name = "Blog"
+    url = "/post/"
+    weight = 1
+[[menu.main]]
+    name = "Writeups"
+    url = "/writeups/"
+    weight = 2
+[[menu.main]]
+    name = "Talks"
+    url = "/talks/"
+    weight = 3
+[[menu.feed]]
+    name = "Categories"
+    url = "/categories/"
+    weight = 3
+[[menu.feed]]
+    name = "Tags"
+    url = "/tags/"
+    weight = 4
+[[menu.feed]]
+    name = "Subscribe"
+    url = "/index.xml"
+
+[params]
+    description = "A simple, minimal blog for those who love text."
+    footer = "[<img src='/linkedin.svg' style='max-width:3%' alt='LinkedIn account' />](https://www.linkedin.com/in/ashutosh1206/) [<img src='/twitter.svg' style='max-width:3%' alt='Twitter handle' />](https://twitter.com/ashutosha_) [<img src='/github.svg' style='max-width:3%' alt='GitHub account' />](https://github.com/ashutosh1206)" 
+    custom_css = ["css/theme-override.css"]

@@ -7,6 +7,7 @@ ignoreFiles = ["\\.Rmd$", "_files$", "_cache$"]
 preserveTaxonomyNames = true
 enableEmoji = true
 footnotereturnlinkcontents = "↩"
+disqusShortname = "ashutosha"
 
 [permalinks]
     post = "/post/:slug/"

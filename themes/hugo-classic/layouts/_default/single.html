@@ -18,6 +18,7 @@
 
 <main>
 {{ .Content }}
+{{ template "_internal/disqus.html" . }}
 </main>
 
 {{ partial "footer.html" . }}
